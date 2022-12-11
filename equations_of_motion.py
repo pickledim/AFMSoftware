@@ -96,6 +96,8 @@ cd0 = config_data['cd']
 engine_coefs = config_data['engine_coefs']
 
 q = config_data['q']
+teta_target = config_data['teta_target']
+
 t_tr = 0
 
 
@@ -105,7 +107,7 @@ f_cl = interp1d(np.array([aoa0, aoa_max]),
 f_cd = interp1d(np.array([aoa0, aoa_max]),
                 np.array([cd_max, cd_max]))
 
-vr += 0.07*v_stall
+vr += 0.075*v_stall
 # define vef
 vef = vr - 2
 
@@ -122,7 +124,7 @@ while v_kt < vr:
 
     if vef_inst:
         if v_kt >= vef:
-            thrust =  thrust / 2  # + 1e4 thrust_oei#
+            thrust = thrust / 2  # + 1e4 thrust_oei#
             vef_inst = False
         else:
             thrust = get_thrust(v, engine_coefs)  # trhust_aeo + 1.8e4
@@ -149,6 +151,7 @@ x_ground = x
 print("\n====== Transition to VLOF ======\n")
 
 t_tr = 0
+
 while round(lift, 1) < round(weight, 1):
 
     aoa = q * dt + aoa0
@@ -177,6 +180,8 @@ while round(lift, 1) < round(weight, 1):
     v_kt = uc.ms2kt(v)
     aoa0 = aoa
 print(f'Velocity: {round(v_kt, 2)} kt')
+print(f'Distance: {round(x, 2)} m')
+
 vlof = v_kt
 gamma = 0
 vz = 0
@@ -221,20 +226,24 @@ while height < 35.:
     # print(f'Gamma {gamma} deg')
     # print(f'Teta {teta} deg')
     # print(f'Velocity {v_kt} kt\n')
+    # print(f'Distance {x} m\n')
     if v_kt >= v2min:
         print(f'V2min reached at {round(height, 2)}ft!')
         break
 
 while height < 35.:
 
+    teta = teta_target
     gamma = (thrust - drag) / weight
-    lift = weight * np.cos(np.radians(gamma))
-    v_z = v * np.sin(np.radians(gamma))
+    aoa = teta - uc.rad2deg(gamma)
+    lift = weight * np.cos(gamma)
+    v_z = v * np.sin(gamma)
     dh = v_z * dt
-    dx = dh * np.tan(np.radians(gamma))
+    dx = v * np.cos(gamma) * dt
 
     x += dx
     height += uc.m2ft(dh)
+    # print(f'Distance {x} m\n')
 
 print(f'Height {round(height, 2)} ft')
 print(f'Distance {round(x, 2)} m')
@@ -257,7 +266,7 @@ gamma_jar_req = uc.perc2rad(2.4)
 v_min_grad = (2 * (thrust * np.cos(np.radians(aoa_35ft)) - weight*np.sin(gamma_jar_req)) / (rho * S * cd_35ft)) ** .5
 
 if v_min_grad > v:
-    print('Increase VR. V2 does not reach the minimum gradient at ssg')
+    print('Increase VR. V2 does not reach the gradient requirement for ssg')
 else:
     print(f'V2 reached sucessfully with a VR {vr}kt')
 
