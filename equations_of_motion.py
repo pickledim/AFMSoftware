@@ -201,7 +201,8 @@ while height < 35.:
     if aoa < aoa_max:
         teta = q * dt + teta0
     else:
-        teta = -q * dt + teta0
+
+        teta = teta0
 
     gamma = teta - aoa
 
@@ -214,23 +215,28 @@ while height < 35.:
     dx = dh * np.tan(np.radians(gamma))
 
     height += uc.m2ft(dh)
+
+    # update
     x += dx
     v += dv
+    t += dt
+
+
     teta0 = teta
     aoa0 = min(teta, aoa_max)
     v_kt = uc.ms2kt(v)
     if gamma > 2:
         print('error: gamma overshoots')
         break
-    # print(f'Height {height} ft')
-    # print(f'Gamma {gamma} deg')
-    # print(f'Teta {teta} deg')
-    # print(f'Velocity {v_kt} kt\n')
-    # print(f'Distance {x} m\n')
+
     if v_kt >= v2min:
         print(f'V2min reached at {round(height, 2)}ft!')
         break
-
+print(f'Height {height} ft')
+print(f'Gamma {gamma} deg')
+print(f'Teta {teta} deg')
+print(f'Velocity {v_kt} kt\n')
+print(f'Distance {x} m\n')
 while height < 35.:
 
     teta = teta_target
@@ -241,7 +247,9 @@ while height < 35.:
     dh = v_z * dt
     dx = v * np.cos(gamma) * dt
 
+    # update
     x += dx
+    t += dt
     height += uc.m2ft(dh)
     # print(f'Distance {x} m\n')
 
