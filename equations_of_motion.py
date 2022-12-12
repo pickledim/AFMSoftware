@@ -79,10 +79,9 @@ f_cl = interp1d(np.array([aoa0, aoa_max]),
 f_cd = interp1d(np.array([aoa0, aoa_max]),
                 np.array([cd_max, cd_max]))
 
-vr += .12*v_stall
+vr += .08*v_stall
 # define vef
 vef = vr - 2
-
 
 v = 0.
 t = 0.
@@ -100,7 +99,7 @@ while v_kt < vr:
 
     if vef_inst:
         if v_kt >= vef:
-            thrust = 100123.43#thrust / 2  # + 1e4 thrust_oei#
+            thrust = thrust / 2  # + 1e4 thrust_oei#
             vef_inst = False
         else:
             thrust = get_thrust(v, engine_coefs)  # trhust_aeo + 1.8e4
@@ -127,13 +126,13 @@ x_ground = x
 print("\n====== Transition to VLOF ======\n")
 
 t_tr = 0
-
+transition_phase_passed = True
 while round(lift, 1) < round(weight, 1):
 
     aoa = q * dt + aoa0
     if aoa > aoa_max:
         print('Increase VR the a/c cannot Lift Off :(')
-        increase = True
+        transition_phase_passed = False
         break
     else:
         drag = 0.5 * rho * S * f_cd(aoa) * v ** 2
@@ -153,103 +152,107 @@ while round(lift, 1) < round(weight, 1):
 
     v_kt = uc.ms2kt(v)
     aoa0 = aoa
-print(f'Velocity: {round(v_kt, 2)} kt')
-print(f'Distance: {round(x, 2)} m')
-print(f'Aoa: {round(aoa, 2)} deg')
 
-vlof = v_kt
-teta0 = aoa
-aoa0 = aoa
+if transition_phase_passed:
+    print(f'Velocity: {round(v_kt, 2)} kt')
+    print(f'Distance: {round(x, 2)} m')
+    print(f'Aoa: {round(aoa, 2)} deg')
 
-print('\n====== Airborne Phase ======\n')
-while height < 35.:
+    vlof = v_kt
+    teta0 = aoa
+    aoa0 = aoa
+    airborne_phase_passed = True
+    print('\n====== Airborne Phase ======\n')
+    while height < 35.:
 
-    T_aero = thrust * np.cos(np.radians(aoa_max))
+        T_aero = thrust * np.cos(np.radians(aoa_max))
 
-    drag = 0.5 * rho * S * f_cd(aoa_max) * v ** 2
-    lift = 0.5 * rho * S * f_cl(aoa_max) * v ** 2
+        drag = 0.5 * rho * S * f_cd(aoa_max) * v ** 2
+        lift = 0.5 * rho * S * f_cl(aoa_max) * v ** 2
 
-    SFx = T_aero - drag - weight * np.sin(gamma_rad)
+        SFx = T_aero - drag - weight * np.sin(gamma_rad)
 
-    accel = SFx / mass
+        accel = SFx / mass
 
-    dgamma = (thrust * np.sin(np.radians(aoa_max)) + lift - weight) / (mass * v) * dt
+        dgamma = (thrust * np.sin(np.radians(aoa_max)) + lift - weight) / (mass * v) * dt
 
-    gamma_rad += dgamma
-    gamma = np.degrees(gamma_rad)
-    teta = aoa_max + gamma
+        gamma_rad += dgamma
+        gamma = np.degrees(gamma_rad)
+        teta = aoa_max + gamma
 
-    v_z = v * np.sin(gamma_rad)
+        v_z = v * np.sin(gamma_rad)
 
-    dv = accel * dt
+        dv = accel * dt
 
-    dh = v * np.sin(gamma_rad) * dt  # a_z*dt**2 + v_z * dt
+        dh = v * np.sin(gamma_rad) * dt  # a_z*dt**2 + v_z * dt
 
-    dx = v * np.cos(gamma_rad) * dt  # dh * np.tan(gamma_rad)
+        dx = v * np.cos(gamma_rad) * dt  # dh * np.tan(gamma_rad)
 
-    # update
-    x += dx
-    v += dv
-    t += dt
-    height += uc.m2ft(dh)
-    teta0 = teta
-    v_kt = uc.ms2kt(v)
+        # update
+        x += dx
+        v += dv
+        t += dt
+        height += uc.m2ft(dh)
+        teta0 = teta
+        v_kt = uc.ms2kt(v)
 
-    if gamma > 2:
-        print('error: gamma overshoots')
-        break
+        if gamma > 3:
+            print('error: gamma overshoots')
+            airborne_phase_passed = False
+            break
 
-    if v_kt >= v2min:
-        print(f'V2min reached at {round(height, 2)}ft!')
-        break
+        if v_kt >= v2min:
+            print(f'V2min reached at {round(height, 2)}ft!')
+            break
 
-print(f'Height {height} ft')
-print(f'Gamma {gamma} deg')
-print(f'Teta {teta} deg')
-print(f'Velocity {v_kt} kt\n')
-print(f'Distance {x} m\n')
-while height < 35.:
+    if airborne_phase_passed:
+        print(f'Height {height} ft')
+        print(f'Gamma {gamma} deg')
+        print(f'Teta {teta} deg')
+        print(f'Velocity {v_kt} kt\n')
+        print(f'Distance {x} m\n')
+        while height < 35.:
 
-    teta = teta_target
-    aoa = teta - gamma
-    drag = 0.5 * rho * S * f_cd(aoa) * v ** 2
-    gamma = (thrust - drag) / weight
+            teta = teta_target
+            aoa = teta - gamma
+            drag = 0.5 * rho * S * f_cd(aoa) * v ** 2
+            gamma = (thrust - drag) / weight
 
-    lift = weight * np.cos(gamma)
-    v_z = v * np.sin(gamma)
-    dh = v_z * dt
-    dx = v * np.cos(gamma) * dt
+            lift = weight * np.cos(gamma)
+            v_z = v * np.sin(gamma)
+            dh = v_z * dt
+            dx = v * np.cos(gamma) * dt
 
-    # update
-    x += dx
-    t += dt
-    height += uc.m2ft(dh)
+            # update
+            x += dx
+            t += dt
+            height += uc.m2ft(dh)
 
-print(f'Height {round(height, 2)} ft')
-print(f'Distance {round(x, 2)} m')
+        print(f'Height {round(height, 2)} ft')
+        print(f'Distance {round(x, 2)} m')
 
-if uc.ms2kt(v) < v2min:
-    print('Increase VR cannot reach V2min')
-else:
-    print(f'V2min reached with a VRmin {vr} kt')
+        if uc.ms2kt(v) < v2min:
+            print('Increase VR cannot reach V2min')
+        else:
+            print(f'V2min reached with a VRmin {vr} kt')
 
 
-cd_35ft = 2 * drag / (rho * S * v**2)
+        cd_35ft = round(2 * drag / (rho * S * v**2), 3)
 
-x_data = [config_data['cd'], config_data['cd_max']]
-y_data = [config_data['alpha_min'], config_data['alpha_max']]
-f_aoa = interp1d(x_data, y_data)
-aoa_35ft = f_aoa(cd_35ft)
+        x_data = [config_data['cd'], config_data['cd_max']]
+        y_data = [config_data['alpha_min'], config_data['alpha_max']]
+        f_aoa = interp1d(x_data, y_data)
+        aoa_35ft = f_aoa(cd_35ft)
 
-# TODO create a loop in order fro ac speed to converge to the requirement(easy)
-# Extra requirement from JAR 25.121(b)
-gamma_jar_req = uc.perc2rad(2.4)
-v_min_grad = (2 * (thrust * np.cos(np.radians(aoa_35ft)) - weight*np.sin(gamma_jar_req)) / (rho * S * cd_35ft)) ** .5
+        # TODO create a loop in order fro ac speed to converge to the requirement(easy)
+        # Extra requirement from JAR 25.121(b)
+        gamma_jar_req = uc.perc2rad(2.4)
+        v_min_grad = (2 * (thrust * np.cos(np.radians(aoa_35ft)) - weight*np.sin(gamma_jar_req)) / (rho * S * cd_35ft)) ** .5
 
-if v_min_grad > v:
-    print('Increase VR. V2 does not reach the gradient requirement for ssg')
-else:
-    print(f'V2 reached sucessfully with a VR {vr}kt')
+        if v_min_grad > v:
+            print('Increase VR. V2 does not reach the gradient requirement for ssg')
+        else:
+            print(f'V2 reached sucessfully with a VR {vr}kt')
 
 
 
