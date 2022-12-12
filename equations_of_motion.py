@@ -23,6 +23,36 @@ def get_thrust(speed, coefs):
     return _thrust
 
 
+def find_alpha(_thrust, _alpha_vect, _v, _gamma):
+    """
+
+    :param _thrust:
+    :param _alpha_vect:
+    :param _v:
+    :param _gamma:
+    :return:
+    """
+    T_aero = _thrust * np.cos(np.radians(_alpha_vect))
+    drag = 0.5 * rho * S * f_cd(_alpha_vect) * v ** 2
+    SFx = T_aero - drag - weight * np.sin(np.radians(gamma))
+
+    _accel = SFx / mass
+
+    df = pd.DataFrame([_alpha_vect, _accel, drag])
+    df = df.T
+    df.columns = ['alpha', 'accel', 'drag']
+    df = df[df.accel > 0]
+    ind_min = df.accel.idxmin()
+
+    _min_accel = df.loc[ind_min, 'accel']
+
+    _aoa = df.loc[ind_min, 'alpha']
+
+    _drag = df.loc[ind_min, 'drag']
+
+    return _min_accel, _aoa, _drag
+
+
 # get config data
 with open('config.json', 'r') as f:
     config_data = json.load(f)
@@ -156,26 +186,21 @@ print(f'Distance: {round(x, 2)} m')
 print(f'Aoa: {round(aoa, 2)} deg')
 
 vlof = v_kt
-teta0 = aoa
-aoa0 = aoa
+
+alpha_vector = np.linspace(config_data['alpha_min'], config_data['alpha_max'], 100, endpoint=True)
 
 print('\n====== Airborne Phase ======\n')
 while height < 35.:
 
-    T_aero = thrust * np.cos(np.radians(aoa0))
+    accel, aoa, drag = find_alpha(thrust, alpha_vector, v, gamma)
 
-    drag = 0.5 * rho * S * f_cd(aoa_max) * v ** 2
-    lift = 0.5 * rho * S * f_cl(aoa_max) * v ** 2
+    lift = 0.5 * rho * S * f_cl(aoa) * v ** 2
 
-    SFx = T_aero - drag - weight * np.sin(gamma_rad)
-
-    accel = SFx / mass
-
-    dgamma = (thrust * np.sin(np.radians(aoa0)) + lift - weight) / (mass * v) * dt
+    dgamma = (thrust * np.sin(np.radians(aoa)) + lift - weight) / (mass * v) * dt
 
     gamma_rad += dgamma
     gamma = np.degrees(gamma_rad)
-    teta = aoa_max + gamma
+    teta = aoa + gamma
 
     v_z = v * np.sin(gamma_rad)
 
@@ -190,7 +215,6 @@ while height < 35.:
     v += dv
     t += dt
     height += uc.m2ft(dh)
-    teta0 = teta
     v_kt = uc.ms2kt(v)
 
     assert gamma < 3, 'Gamma overshoots. Increase VR'
@@ -199,7 +223,7 @@ while height < 35.:
         print(f'V2min reached at {round(height, 2)}ft!')
         break
 
-
+aoa_v2 = aoa
 print(f'Height {height} ft')
 print(f'Gamma {gamma} deg')
 print(f'Teta {teta} deg')
