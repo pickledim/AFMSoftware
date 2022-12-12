@@ -79,7 +79,7 @@ f_cl = interp1d(np.array([aoa0, aoa_max]),
 f_cd = interp1d(np.array([aoa0, aoa_max]),
                 np.array([cd_max, cd_max]))
 
-vr += .08*v_stall
+vr += .09*v_stall
 # define vef
 vef = vr - 2
 
@@ -165,7 +165,7 @@ if transition_phase_passed:
     print('\n====== Airborne Phase ======\n')
     while height < 35.:
 
-        T_aero = thrust * np.cos(np.radians(aoa_max))
+        T_aero = thrust * np.cos(np.radians(aoa0))
 
         drag = 0.5 * rho * S * f_cd(aoa_max) * v ** 2
         lift = 0.5 * rho * S * f_cl(aoa_max) * v ** 2
@@ -174,7 +174,7 @@ if transition_phase_passed:
 
         accel = SFx / mass
 
-        dgamma = (thrust * np.sin(np.radians(aoa_max)) + lift - weight) / (mass * v) * dt
+        dgamma = (thrust * np.sin(np.radians(aoa0)) + lift - weight) / (mass * v) * dt
 
         gamma_rad += dgamma
         gamma = np.degrees(gamma_rad)
@@ -198,6 +198,7 @@ if transition_phase_passed:
 
         if gamma > 3:
             print('error: gamma overshoots')
+            print('Increase VR')
             airborne_phase_passed = False
             break
 
@@ -235,7 +236,6 @@ if transition_phase_passed:
             print('Increase VR cannot reach V2min')
         else:
             print(f'V2min reached with a VRmin {vr} kt')
-
 
         cd_35ft = round(2 * drag / (rho * S * v**2), 3)
 
