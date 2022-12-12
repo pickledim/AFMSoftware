@@ -121,6 +121,19 @@ gamma_rad = 0
 vz = 0
 height = 0
 
+v_kt_log = [0]
+t_log = [0]
+x_log = [0]
+gamma_log = [0]
+vz_log = [0]
+height_log = [0]
+thrust_log = [0]
+lift_log = [0]
+drag_log = [0]
+teta_log = [0]
+alpha_log = [0]
+
+
 dt = 0.125
 v_kt = uc.ms2kt(v)
 vef_inst = True
@@ -148,6 +161,20 @@ while v_kt < vr:
     t += dt
 
     v_kt = uc.ms2kt(v)
+
+    v_kt_log.append(v_kt)
+    t_log.append(t)
+    x_log.append(x)
+    gamma_log.append(gamma)
+    vz_log.append(vz)
+    height_log.append(height)
+    thrust_log.append(thrust)
+    lift_log.append(lift)
+    drag_log.append(drag)
+    teta_log.append(0)
+    alpha_log.append(0)
+
+
 print(f'Velocity: {round(v_kt, 2)} kt')
 print(f'Distance: {round(x, 2)} m\n')
 
@@ -179,6 +206,19 @@ while round(lift, 1) < round(weight, 1):
 
     v_kt = uc.ms2kt(v)
     aoa0 = aoa
+
+    v_kt_log.append(v_kt)
+    t_log.append(t)
+    x_log.append(x)
+    gamma_log.append(gamma)
+    vz_log.append(vz)
+    height_log.append(height)
+    thrust_log.append(thrust)
+    lift_log.append(lift)
+    drag_log.append(drag)
+    teta_log.append(aoa)
+    alpha_log.append(aoa)
+
 
 
 print(f'Velocity: {round(v_kt, 2)} kt')
@@ -219,6 +259,18 @@ while height < 35.:
 
     assert gamma < 3, 'Gamma overshoots. Increase VR'
 
+    v_kt_log.append(v_kt)
+    t_log.append(t)
+    x_log.append(x)
+    gamma_log.append(gamma)
+    vz_log.append(vz)
+    height_log.append(height)
+    thrust_log.append(thrust)
+    lift_log.append(lift)
+    drag_log.append(drag)
+    teta_log.append(teta)
+    alpha_log.append(aoa)
+
     if v_kt >= v2min:
         print(f'V2min reached at {round(height, 2)}ft!')
         break
@@ -246,8 +298,24 @@ while height < 35.:
     t += dt
     height += uc.m2ft(dh)
 
+    v_kt_log.append(v_kt)
+    t_log.append(t)
+    x_log.append(x)
+    gamma_log.append(gamma)
+    vz_log.append(vz)
+    height_log.append(height)
+    thrust_log.append(thrust)
+    lift_log.append(lift)
+    drag_log.append(drag)
+    teta_log.append(teta)
+    alpha_log.append(aoa)
+
 print(f'Height {round(height, 2)} ft')
 print(f'Distance {round(x, 2)} m')
+
+df = pd.DataFrame([t_log, x_log, v_kt_log, thrust_log, lift_log, drag_log, alpha_log, teta_log, gamma_log, vz_log,
+                   height_log]).T
+df.columns = ['time', 'x_distance', 'cas', 'thrust', 'lift', 'drag', 'alpha', 'teta','gamma', 'vz', 'height']
 
 if uc.ms2kt(v) < v2min:
     print('Increase VR cannot reach V2min')
