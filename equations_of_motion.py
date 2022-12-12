@@ -317,6 +317,7 @@ df = pd.DataFrame([t_log, x_log, v_kt_log, thrust_log, lift_log, drag_log, alpha
                    height_log]).T
 df.columns = ['time', 'x_distance', 'cas', 'thrust', 'lift', 'drag', 'alpha', 'teta','gamma', 'vz', 'height']
 df.to_csv('afm_log.csv')
+
 if uc.ms2kt(v) < v2min:
     print('Increase VR cannot reach V2min')
 else:
