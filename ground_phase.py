@@ -71,7 +71,7 @@ class GroundRoll(TakeOffPrep):
         """
         Perform calculations for the ground roll up to the rotation speed.
         """
-        TakeOffPrep.pilot_preparation(self)
+        super().pilot_preparation()
 
         dt, vr = self.variables["dt"], self.speeds["vr"]
 
@@ -91,7 +91,7 @@ class GroundRoll(TakeOffPrep):
                                                                                      forces["Lift"], forces["F_x"]
             self.variables["accel"], self.variables["dv"], self.variables["dx"] = accel, dv, dx,
 
-            TakeOffPrep.update_values(self)
+            super().update_values()
 
 
         self.characteristic_instants["Rotation"] = self.variables["t"]
