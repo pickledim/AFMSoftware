@@ -107,7 +107,7 @@ f_cl = interp1d(np.array([aoa0, aoa_max]),
                 np.array([cl0, cl_max]))
 
 f_cd = interp1d(np.array([aoa0, aoa_max]),
-                np.array([cd_max, cd_max]))
+                np.array([cd0, cd_max]))
 
 vr += .09*v_stall
 # define vef
@@ -219,7 +219,7 @@ while round(lift, 1) < round(weight, 1):
     teta_log.append(aoa)
     alpha_log.append(aoa)
 
-
+# assert vlof to 1.1Vr
 
 print(f'Velocity: {round(v_kt, 2)} kt')
 print(f'Distance: {round(x, 2)} m')
@@ -257,7 +257,7 @@ while height < 35.:
     height += uc.m2ft(dh)
     v_kt = uc.ms2kt(v)
 
-    assert gamma < 3, 'Gamma overshoots. Increase VR'
+
 
     v_kt_log.append(v_kt)
     t_log.append(t)
@@ -315,7 +315,7 @@ print(f'Distance {round(x, 2)} m')
 
 df = pd.DataFrame([t_log, x_log, v_kt_log, thrust_log, lift_log, drag_log, alpha_log, teta_log, gamma_log, vz_log,
                    height_log]).T
-df.columns = ['time', 'x_distance', 'cas', 'thrust', 'lift', 'drag', 'alpha', 'teta','gamma', 'vz', 'height']
+df.columns = ['time', 'x_distance', 'cas', 'thrust', 'lift', 'drag', 'alpha', 'teta', 'gamma', 'vz', 'height']
 df.to_csv('afm_log.csv')
 
 if uc.ms2kt(v) < v2min:
@@ -332,6 +332,13 @@ f_aoa = interp1d(x_data, y_data)
 aoa_35ft = f_aoa(cd_35ft)
 
 # TODO create a loop in order for the a/c speed to converge to JAR requirement(easy)
+# TODO impose this V2
+'''
+The idea is to Input the V2min in the below equation to check if you get the 2.4% gradient. 
+You have the Lift = Weight thus you have the Cd from Drag Polar. If you dont get the required gradient then 
+you impose this gradient to find the target speed. Then you start with your VR and you add speed 
+increments until you reach the V2 target. 
+'''
 # Extra requirement from JAR 25.121(b)
 gamma_jar_req = uc.perc2rad(2.4)
 v_min_grad = (2 * (thrust * np.cos(np.radians(aoa_35ft)) - weight*np.sin(gamma_jar_req)) /
@@ -340,7 +347,7 @@ v_min_grad = (2 * (thrust * np.cos(np.radians(aoa_35ft)) - weight*np.sin(gamma_j
 if v_min_grad > v:
     print('Increase VR. V2 does not reach the gradient requirement for ssg')
 else:
-    print(f'V2 reached sucessfully with a VR {vr}kt')
+    print(f'V2 reached successfully with a VR {vr}kt')
 
 
 

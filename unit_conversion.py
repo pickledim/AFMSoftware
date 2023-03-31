@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 
 def ms2kt(cas_ms):
@@ -52,6 +53,13 @@ def deg2perc(deg):
 
 def perc2rad(perc):
 
-    rad = np.arctan(perc / 100)
+    rad = (2 * math.pi) * perc / 100
 
     return rad
+
+
+def rad2perc(rad):
+
+    perc = 100 * rad / (2 * math.pi)
+
+    return perc
