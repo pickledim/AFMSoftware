@@ -3,7 +3,6 @@ from typing import Dict, Tuple
 import numpy as np
 
 from ground_phase import GroundRoll
-from take_off_env import TakeOffPrep
 
 
 class RotationPhase(GroundRoll):
@@ -13,8 +12,6 @@ class RotationPhase(GroundRoll):
 
         rho = self.constants_dict["rho"]
         S = self.constants_dict["S"]
-        cd0 = self.constants_dict["cd0"]
-        cl0 = self.constants_dict["cl0"]
         mu = self.constants_dict["mu"]
         weight = self.constants_dict["weight"]
         mass = self.constants_dict["mass"]
@@ -39,9 +36,9 @@ class RotationPhase(GroundRoll):
         return forces, accel
 
     def transition_phase(self):
-        super().up_to_rotation()
+        # super().up_to_rotation()
 
-        self.variables["limit_aoa"] = False
+        self.variables["need_to_increase_Vr"] = False
 
         aoa0 = self.variables["aoa"]
         dt = self.variables["dt"]
@@ -53,7 +50,7 @@ class RotationPhase(GroundRoll):
             aoa = q * dt + aoa0
 
             if aoa > alpha_max:
-                self.variables["limit_aoa"] = True
+                self.variables["need_to_increase_Vr"] = True
                 print("\nIncrease VR the a/c cannot Lift Off :(\n")
                 return
 
@@ -71,17 +68,19 @@ class RotationPhase(GroundRoll):
                     "dv": dv,
                     "dx": dx,
                     "aoa": aoa,
+                    "teta": aoa
                 }
             )
 
             super().update_values()
             aoa0 = aoa
 
-        self.characteristic_instants["LiftOff"] = self.variables["t"]
+        self.characteristic_instants["LiftOff"] = {"Instant": self.variables["t"],
+                                                   "Speed": self.variables["v_kt"]}
 
 
 if __name__ == "__main__":
-    mass = 60000.0  # [kg]
+    mass = 80000.0  # [kg]
     conf = "1+F"
     zp = 0.0  # [ft]
     lg = "Up"
