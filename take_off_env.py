@@ -22,7 +22,8 @@ class TakeOffPrep(object):
             conf: str,
             zp: float,
             lg: str,
-            eng_state: str
+            eng_state: str,
+            timestep: float
     ):
 
         # performance data
@@ -31,6 +32,7 @@ class TakeOffPrep(object):
         self.zp = zp
         self.lg = lg
         self.eng_state = eng_state
+        self.dt = timestep
 
         # get config data
         with open('config.json', 'r') as f:
@@ -84,6 +86,9 @@ class TakeOffPrep(object):
 
         self.f_cd = interp1d(np.array([self.constants_dict["aoa0"], self.constants_dict["aoa_max"]]),
                              np.array([self.constants_dict["cd0"], self.constants_dict["cd_max_op"]]))
+
+        self.f_a_cd = interp1d(np.array([self.constants_dict["cd0"], self.constants_dict["cd_max_op"]]),
+                               np.array([self.constants_dict["aoa0"], self.constants_dict["aoa_max"]]))
 
         # define extra variables that will be used later on
         self.v_sta: float
@@ -171,7 +176,7 @@ class TakeOffPrep(object):
 
             "sf_x": 0,
             "mass": self.mass,
-            "dt": 0.25  # timestep
+            "dt": self.dt  # timestep
         }
 
         self.event_log = {
@@ -196,17 +201,17 @@ class TakeOffPrep(object):
 
         self.variables["v_kt"] = uc.ms2kt(self.variables["v"])
 
-        self.event_log["v_kt_log"].append(self.variables["v_kt"])
-        self.event_log["t_log"].append(self.variables["t"])
-        self.event_log["x_log"].append(self.variables["x"])
-        self.event_log["gamma_log"].append(self.variables["gamma"])
-        self.event_log["vz_log"].append(self.variables["v_z"])
-        self.event_log["height_log"].append(self.variables["height"])
-        self.event_log["thrust_log"].append(self.variables["thrust"])
-        self.event_log["lift_log"].append(self.variables["lift"])
-        self.event_log["drag_log"].append(self.variables["drag"])
-        self.event_log["teta_log"].append(self.variables["teta"])
-        self.event_log["alpha_log"].append(self.variables["aoa"])
+        self.event_log["v_kt_log"].append(float(self.variables["v_kt"]))
+        self.event_log["t_log"].append(float(self.variables["t"]))
+        self.event_log["x_log"].append(float(self.variables["x"]))
+        self.event_log["gamma_log"].append(float(self.variables["gamma"]))
+        self.event_log["vz_log"].append(float(self.variables["v_z"]))
+        self.event_log["height_log"].append(float(self.variables["height"]))
+        self.event_log["thrust_log"].append(float(self.variables["thrust"]))
+        self.event_log["lift_log"].append(float(self.variables["lift"]))
+        self.event_log["drag_log"].append(float(self.variables["drag"]))
+        self.event_log["teta_log"].append(float(self.variables["teta"]))
+        self.event_log["alpha_log"].append(float(self.variables["aoa"]))
 
     def pilot_preparation(self):
 
