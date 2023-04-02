@@ -99,7 +99,7 @@ class TakeOffPrep(object):
         self.v_target: float
         self.characteristic_instants = dict()
 
-    def calculate_stall_speed(self):
+    def calculate_stall_speed(self) -> None:
 
         weight, rho, s, clmax = self.constants_dict["weight"], self.constants_dict["rho"], self.constants_dict["S"],\
                                 self.constants_dict["clmax"]
@@ -107,12 +107,12 @@ class TakeOffPrep(object):
         v_stall = math.sqrt((2 * weight / (rho * s * clmax)))  # [m/s]
         self.v_sta = uc.ms2kt(v_stall)  # [kt]
 
-    def get_vmu(self):
+    def get_vmu(self) -> None:
 
         kVs = self.vmu_interp_model(self.thrust_ssg / self.weight)
         self.vmu = kVs * self.v_sta  # [kt]
 
-    def define_characteristic_speeds(self):
+    def define_characteristic_speeds(self) -> None:
 
         v2min = max(1.13*self.v_sta, 1.1*self.vmca, self.vmu)  # [kt]
         vr = max(1.05*self.v_sta, 1.05*self.vmca)  # [kt] # [kt]
@@ -127,7 +127,7 @@ class TakeOffPrep(object):
             "v_stall": self.v_sta
         }
 
-    def calculate_v2_jar(self):
+    def calculate_v2_jar(self) -> None:
 
         # constants
         weight, s, v2min = self.constants_dict["weight"], self.constants_dict["S"], self.speeds["v2min"]
@@ -154,7 +154,7 @@ class TakeOffPrep(object):
 
         self.speeds["v_target"] = v_target
 
-    def initialize_data(self):
+    def initialize_data(self) -> None:
 
         self.variables = {
             "t": 0.,
@@ -193,7 +193,7 @@ class TakeOffPrep(object):
             "drag_log": [0]
         }
 
-    def update_values(self):
+    def update_values(self) -> None:
 
         self.variables["v"] += self.variables["dv"]
         self.variables["x"] += self.variables["dx"]
@@ -213,7 +213,7 @@ class TakeOffPrep(object):
         self.event_log["teta_log"].append(float(self.variables["teta"]))
         self.event_log["alpha_log"].append(float(self.variables["aoa"]))
 
-    def pilot_preparation(self):
+    def pilot_preparation(self) -> None:
 
         self.calculate_stall_speed()
         self.get_vmu()

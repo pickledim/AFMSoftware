@@ -67,7 +67,7 @@ class GroundRoll(TakeOffPrep):
 
         return forces, accel
 
-    def up_to_rotation(self):
+    def up_to_rotation(self) -> None:
         """
         Perform calculations for the ground roll up to the rotation speed.
         """

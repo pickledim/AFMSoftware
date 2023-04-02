@@ -42,7 +42,7 @@ class RotationPhase(TakeOffPrep):
 
         return forces, accel
 
-    def transition_phase(self):
+    def transition_phase(self) -> None:
 
         self.variables["need_to_increase_Vr"] = False
 
