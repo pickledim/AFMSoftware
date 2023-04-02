@@ -2,11 +2,14 @@ from typing import Dict, Tuple
 
 import numpy as np
 
-from ground_phase import GroundRoll
+
+from take_off_env import TakeOffPrep
 
 
-class RotationPhase(GroundRoll):
+class RotationPhase(TakeOffPrep):
     def calculate_forces_in_rotation(self, aoa: float) -> Tuple[Dict[str, float], float]:
+
+        # redefine the variables from the class for ease of reading
         f_cl = self.f_cl
         f_cd = self.f_cd
 
@@ -18,14 +21,18 @@ class RotationPhase(GroundRoll):
         v = self.variables["v"]
         thrust = self.variables["thrust"]
 
+        # compute the acting forces
         drag = 0.5 * rho * S * f_cd(aoa) * v ** 2
         lift = 0.5 * rho * S * f_cl(aoa) * v ** 2
         f_roll = abs(mu * (lift - weight))
 
+        # compute the resulting force
         f_x = thrust * np.cos(np.radians(aoa)) - drag - f_roll
 
+        # compute the acceleration
         accel = f_x / mass
 
+        # stack the forces in a dictionary
         forces = {
             "Drag": drag,
             "Lift": lift,
@@ -36,10 +43,10 @@ class RotationPhase(GroundRoll):
         return forces, accel
 
     def transition_phase(self):
-        # super().up_to_rotation()
 
         self.variables["need_to_increase_Vr"] = False
 
+        # redefine the variables from the class for ease of reading
         aoa0 = self.variables["aoa"]
         dt = self.variables["dt"]
         weight = self.constants_dict["weight"]
@@ -77,14 +84,3 @@ class RotationPhase(GroundRoll):
 
         self.characteristic_instants["LiftOff"] = {"Instant": self.variables["t"],
                                                    "Speed": self.variables["v_kt"]}
-
-
-if __name__ == "__main__":
-    mass = 80000.0  # [kg]
-    conf = "1+F"
-    zp = 0.0  # [ft]
-    lg = "Up"
-    engine_state = "OEI"
-
-    a320_to = RotationPhase(mass, conf, zp, lg, engine_state)
-    a320_to.transition_phase()
