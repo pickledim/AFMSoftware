@@ -220,14 +220,3 @@ class TakeOffPrep(object):
         self.define_characteristic_speeds()
         self.calculate_v2_jar()
         self.initialize_data()
-
-
-
-
-
-
-
-
-
-
-

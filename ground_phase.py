@@ -6,7 +6,7 @@ import numpy as np
 from take_off_env import TakeOffPrep
 
 
-def get_thrust(speed: float, coefs: list) -> float:
+def get_thrust(speed: float, coefs: list) -> np.array:
     """
 
     :param speed:
@@ -87,23 +87,12 @@ class GroundRoll(TakeOffPrep):
             dx = 0.5 * accel * dt ** 2 + self.variables["v"] * dt
 
             # update variables
-            self.variables["drag"], self.variables["lift"], self.variables["sf_x"] = forces["Drag"], \
-                                                                                     forces["Lift"], forces["F_x"]
+            self.variables["drag"], self.variables["lift"], self.variables["sf_x"] = \
+                forces["Drag"], forces["Lift"], forces["F_x"]
+
             self.variables["accel"], self.variables["dv"], self.variables["dx"] = accel, dv, dx,
 
             super().update_values()
 
         self.characteristic_instants["Rotation"] = {"Instant": self.variables["t"],
-                                                      "Speed": self.variables["v_kt"]}
-
-
-if __name__ == "__main__":
-
-    mass = 60000.0  # [kg]
-    conf = '1+F'
-    zp = 0.  # [ft]
-    lg = 'Up'
-    engine_state = 'OEI'
-
-    a320_to = GroundRoll(mass, conf, zp, lg, engine_state)
-    a320_to.up_to_rotation()
+                                                    "Speed": self.variables["v_kt"]}
