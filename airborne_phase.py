@@ -10,7 +10,7 @@ from take_off_env import TakeOffPrep
 
 class AirbornePhase(TakeOffPrep):
 
-    def pid_control(self):
+    def pid_control(self) -> None:
 
         # Use the PID controller to adjust the throttle based on the difference between the target and
         # current angle of attack
@@ -18,7 +18,7 @@ class AirbornePhase(TakeOffPrep):
 
         self.variables["aoa"] += throttle_adjustment * 1e-2
 
-    def normal_climb(self):
+    def normal_climb(self) -> None:
 
         v = self.variables["v"]
         rho, S = self.constants_dict["rho"], self.constants_dict["S"]
@@ -54,7 +54,7 @@ class AirbornePhase(TakeOffPrep):
             self.variables["height"] += uc.m2ft(dh)
             super().update_values()
 
-    def calculate_equations_of_motion(self):
+    def calculate_equations_of_motion(self) -> None:
 
         aoa, gamma = self.variables['aoa'], self.variables['gamma']
         thrust, v = self.variables["thrust"], self.variables["v"]
@@ -79,7 +79,7 @@ class AirbornePhase(TakeOffPrep):
 
         return forces, accel
 
-    def update_aerial_values(self):
+    def update_aerial_values(self) -> None:
 
         thrust = self.variables["thrust"]
         weight = self.constants_dict["weight"]
@@ -110,7 +110,7 @@ class AirbornePhase(TakeOffPrep):
         # update
         self.variables["height"] += uc.m2ft(dh)
 
-    def airborne_phase(self):
+    def airborne_phase(self) -> None:
 
         # super().transition_phase()
         # TODO: Study the climb part p299 the Vz is low
