@@ -1,5 +1,7 @@
 import numpy as np
 
+from ambiance import Atmosphere
+
 import simple_pid
 
 import unit_conversion as uc
@@ -54,6 +56,21 @@ class AirbornePhase(TakeOffPrep):
             self.variables["height"] += uc.m2ft(dh)
             super().update_values()
 
+    def calculate_angles(self):
+
+        thrust = self.variables["thrust"]
+        weight = self.constants_dict["weight"]
+
+        # advanced ac perfo p306
+        dgamma = (thrust * np.sin(np.radians(self.variables["aoa"])) + self.variables["lift"] - weight) / \
+                 (self.variables["mass"] * self.variables["v"]) * self.variables["dt"]
+
+        self.variables["gamma_rad"] += dgamma
+
+        self.variables["gamma"] = np.degrees(self.variables["gamma_rad"])
+
+        self.variables["teta"] = self.variables["aoa"] + self.variables["gamma"]
+
     def calculate_equations_of_motion(self) -> None:
 
         aoa, gamma = self.variables['aoa'], self.variables['gamma']
@@ -61,11 +78,13 @@ class AirbornePhase(TakeOffPrep):
         rho, S = self.constants_dict["rho"], self.constants_dict["S"]
         weight, mass = self.constants_dict['weight'], self.constants_dict['mass']
 
+        tas = (rho/self.rho0)**0.5 * v
+
         T_aero = thrust * np.cos(np.radians(aoa))
 
-        drag = 0.5 * rho * S * self.f_cd(aoa) * v ** 2
+        drag = 0.5 * rho * S * self.f_cd(aoa) * tas ** 2
         
-        lift = 0.5 * rho * S * self.f_cl(aoa) * v ** 2
+        lift = 0.5 * rho * S * self.f_cl(aoa) * tas ** 2
 
         SFx = T_aero - drag - weight * np.sin(np.radians(gamma))
 
@@ -80,21 +99,6 @@ class AirbornePhase(TakeOffPrep):
         return forces, accel
 
     def update_aerial_values(self) -> None:
-
-        thrust = self.variables["thrust"]
-        weight = self.constants_dict["weight"]
-
-        # advanced ac perfo p306
-        dgamma = (thrust * np.sin(np.radians(self.variables["aoa"])) + self.variables["lift"] - weight) /\
-                 (self.variables["mass"] * self.variables["v"]) * self.variables["dt"]
-
-        self.variables["gamma_rad"] += dgamma
-
-        self.variables["gamma"] = np.degrees(self.variables["gamma_rad"])
-
-        # assert self.variables["gamma"] < 3, 'Gamma overshoots. Increase VR'
-
-        self.variables["teta"] = self.variables["aoa"] + self.variables["gamma"]
 
         # self.variables["v_z"] = (self.variables["thrust"] - self.variables["drag"]) / weight * self.variables["v"] - \
         #                        (self.variables["v"]/9.81 * self.variables["accel"])
@@ -116,6 +120,8 @@ class AirbornePhase(TakeOffPrep):
         # TODO: Study the climb part p299 the Vz is low
         self.reached_v2 = False
 
+        self.rho0 = Atmosphere(uc.ft2m(self.zp)).density
+
         # Define the target acceleration
         self.target_acceleration = 0.0  # [m/s^2]
 
@@ -126,6 +132,9 @@ class AirbornePhase(TakeOffPrep):
 
             # control alpha in order to get 0 accel
             self.pid_control()
+
+            # get the new angles
+            self.calculate_angles()
 
             # get the forces
             forces, accel = self.calculate_equations_of_motion()
