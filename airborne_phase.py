@@ -54,6 +54,8 @@ class AirbornePhase(TakeOffPrep):
             dh = self.variables["cas"] * np.sin(self.variables["gamma_rad"]) * self.variables["dt"]
             # update
             self.variables["height"] += uc.m2ft(dh)
+            self.rho = Atmosphere(uc.ft2m(self.variables["height"])).density
+            self.variables["tas"] = (self.rho / self.rho0) ** 0.5 * self.variables["cas"]
             super().update_values()
 
     def calculate_angles(self):
@@ -113,6 +115,9 @@ class AirbornePhase(TakeOffPrep):
 
         # update
         self.variables["height"] += uc.m2ft(dh)
+        self.rho = Atmosphere(uc.ft2m(self.variables["height"])).density
+        self.variables["tas"] = (self.rho / self.rho0) ** 0.5 * self.variables["cas"]
+
 
     def airborne_phase(self) -> None:
 
