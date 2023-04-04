@@ -201,6 +201,8 @@ class TakeOffPrep(object):
 
         self.variables["v_kt"] = uc.ms2kt(self.variables["v"])
 
+        self.variables["rho"] = Atmosphere(uc.ft2m(self.variables["height"])).density
+
         self.event_log["v_kt_log"].append(float(self.variables["v_kt"]))
         self.event_log["t_log"].append(float(self.variables["t"]))
         self.event_log["x_log"].append(float(self.variables["x"]))
