@@ -22,7 +22,7 @@ class AirbornePhase(TakeOffPrep):
 
     def normal_climb(self) -> None:
 
-        v = self.variables["cas"]
+        v = self.variables["tas"]
         rho, S = self.constants_dict["rho"], self.constants_dict["S"]
         # print(self.variables["lift"], self.constants_dict["weight"])
         # assert self.variables["lift"] == self.constants_dict["weight"]
@@ -48,14 +48,14 @@ class AirbornePhase(TakeOffPrep):
         #
         while self.variables["height"] < 35.:
             self.variables["dv"] = 0
-            self.variables["dx"] = self.variables["cas"] * np.cos(self.variables["gamma_rad"]) * self.variables["dt"]
+            self.variables["dx"] = self.variables["tas"] * np.cos(self.variables["gamma_rad"]) * self.variables["dt"]
 
             #                 if _bool:
-            dh = self.variables["cas"] * np.sin(self.variables["gamma_rad"]) * self.variables["dt"]
+            dh = self.variables["tas"] * np.sin(self.variables["gamma_rad"]) * self.variables["dt"]
             # update
             self.variables["height"] += uc.m2ft(dh)
             self.rho = Atmosphere(uc.ft2m(self.variables["height"])).density
-            self.variables["tas"] = (self.rho / self.rho0) ** 0.5 * self.variables["cas"]
+            self.variables["tas"] = (self.rho0 / self.rho) ** 0.5 * self.variables["cas"]
             super().update_values()
 
     def calculate_angles(self):
@@ -65,7 +65,7 @@ class AirbornePhase(TakeOffPrep):
 
         # advanced ac perfo p306
         dgamma = (thrust * np.sin(np.radians(self.variables["aoa"])) + self.variables["lift"] - weight) / \
-                 (self.variables["mass"] * self.variables["cas"]) * self.variables["dt"]
+                 (self.variables["mass"] * self.variables["tas"]) * self.variables["dt"]
 
         self.variables["gamma_rad"] += dgamma
 
@@ -116,7 +116,7 @@ class AirbornePhase(TakeOffPrep):
         # update
         self.variables["height"] += uc.m2ft(dh)
         self.rho = Atmosphere(uc.ft2m(self.variables["height"])).density
-        self.variables["tas"] = (self.rho / self.rho0) ** 0.5 * self.variables["cas"]
+        self.variables["tas"] = (self.rho0 / self.rho) ** 0.5 * self.variables["cas"]
 
 
     def airborne_phase(self) -> None:
