@@ -159,10 +159,12 @@ class TakeOffPrep(object):
         self.variables = {
             "t": 0.,
             "x": 0.,
-            "v": 0.,
-            "v_kt": 0.,
-
-            "accel": 0,
+            "cas": 0.,
+            "tas": 0.,
+            "cas_kt": 0.,
+            "tas_kt": 0.,
+            "accel_cas": 0,
+            "accel_tas": 0,
             "dv": 0,
             "dx": 0,
 
@@ -183,7 +185,8 @@ class TakeOffPrep(object):
             "t_log": [0],
             "x_log": [0],
             "height_log": [0],
-            "v_kt_log": [0],
+            "cas_kt_log": [0],
+            "tas_kt_log": [0],
             "vz_log": [0],
             "teta_log": [0],
             "alpha_log": [0],
@@ -195,15 +198,18 @@ class TakeOffPrep(object):
 
     def update_values(self) -> None:
 
-        self.variables["v"] += self.variables["dv"]
+        self.variables["cas"] += self.variables["dv"]
+        self.variables["tas"] += self.variables["dv"]
         self.variables["x"] += self.variables["dx"]
         self.variables["t"] += self.variables["dt"]
 
-        self.variables["v_kt"] = uc.ms2kt(self.variables["v"])
+        self.variables["cas_kt"] = uc.ms2kt(self.variables["cas"])
+        self.variables["tas_kt"] = uc.ms2kt(self.variables["tas"])
 
         self.variables["rho"] = Atmosphere(uc.ft2m(self.variables["height"])).density
 
-        self.event_log["v_kt_log"].append(float(self.variables["v_kt"]))
+        self.event_log["cas_kt_log"].append(float(self.variables["cas_kt"]))
+        self.event_log["tas_kt_log"].append(float(self.variables["tas_kt"]))
         self.event_log["t_log"].append(float(self.variables["t"]))
         self.event_log["x_log"].append(float(self.variables["x"]))
         self.event_log["gamma_log"].append(float(self.variables["gamma"]))

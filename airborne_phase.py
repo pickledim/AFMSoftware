@@ -16,13 +16,13 @@ class AirbornePhase(TakeOffPrep):
 
         # Use the PID controller to adjust the throttle based on the difference between the target and
         # current angle of attack
-        throttle_adjustment = self.pid_acceleration(self.target_acceleration - self.variables["accel"])
+        throttle_adjustment = self.pid_acceleration(self.target_acceleration - self.variables["accel_cas"])
 
         self.variables["aoa"] += throttle_adjustment * 1e-2
 
     def normal_climb(self) -> None:
 
-        v = self.variables["v"]
+        v = self.variables["cas"]
         rho, S = self.constants_dict["rho"], self.constants_dict["S"]
         # print(self.variables["lift"], self.constants_dict["weight"])
         # assert self.variables["lift"] == self.constants_dict["weight"]
@@ -48,10 +48,10 @@ class AirbornePhase(TakeOffPrep):
         #
         while self.variables["height"] < 35.:
             self.variables["dv"] = 0
-            self.variables["dx"] = self.variables["v"] * np.cos(self.variables["gamma_rad"]) * self.variables["dt"]
+            self.variables["dx"] = self.variables["cas"] * np.cos(self.variables["gamma_rad"]) * self.variables["dt"]
 
             #                 if _bool:
-            dh = self.variables["v"] * np.sin(self.variables["gamma_rad"]) * self.variables["dt"]
+            dh = self.variables["cas"] * np.sin(self.variables["gamma_rad"]) * self.variables["dt"]
             # update
             self.variables["height"] += uc.m2ft(dh)
             super().update_values()
@@ -63,7 +63,7 @@ class AirbornePhase(TakeOffPrep):
 
         # advanced ac perfo p306
         dgamma = (thrust * np.sin(np.radians(self.variables["aoa"])) + self.variables["lift"] - weight) / \
-                 (self.variables["mass"] * self.variables["v"]) * self.variables["dt"]
+                 (self.variables["mass"] * self.variables["cas"]) * self.variables["dt"]
 
         self.variables["gamma_rad"] += dgamma
 
@@ -74,11 +74,11 @@ class AirbornePhase(TakeOffPrep):
     def calculate_equations_of_motion(self) -> None:
 
         aoa, gamma = self.variables['aoa'], self.variables['gamma']
-        thrust, v = self.variables["thrust"], self.variables["v"]
+        thrust, v = self.variables["thrust"], self.variables["cas"]
         rho, S = self.constants_dict["rho"], self.constants_dict["S"]
         weight, mass = self.constants_dict['weight'], self.constants_dict['mass']
 
-        tas = (rho/self.rho0)**0.5 * v
+        tas = self.variables["tas"] = (rho/self.rho0)**0.5 * v
 
         T_aero = thrust * np.cos(np.radians(aoa))
 
@@ -102,14 +102,14 @@ class AirbornePhase(TakeOffPrep):
 
         # self.variables["v_z"] = (self.variables["thrust"] - self.variables["drag"]) / weight * self.variables["v"] - \
         #                        (self.variables["v"]/9.81 * self.variables["accel"])
-        self.variables["v_z"] = self.variables["v"] * np.sin(self.variables["gamma_rad"])
+        self.variables["v_z"] = self.variables["cas"] * np.sin(self.variables["gamma_rad"])
 
         self.variables["dv"] = self.variables["accel"] * self.variables["dt"]
 
-        self.variables["dx"] = self.variables["v"] * np.cos(self.variables["gamma_rad"]) * self.variables["dt"]
+        self.variables["dx"] = self.variables["cas"] * np.cos(self.variables["gamma_rad"]) * self.variables["dt"]
         # dh * np.tan(gamma_rad)
 
-        dh = self.variables["v"] * np.sin(self.variables["gamma_rad"]) * self.variables["dt"]  # a_z*dt**2 + v_z * dt
+        dh = self.variables["cas"] * np.sin(self.variables["gamma_rad"]) * self.variables["dt"]  # a_z*dt**2 + v_z * dt
 
         # update
         self.variables["height"] += uc.m2ft(dh)
@@ -152,12 +152,12 @@ class AirbornePhase(TakeOffPrep):
 
             super().update_values()
 
-            if self.variables["v_kt"] >= self.speeds["v_target"]:
+            if self.variables["cas_kt"] >= self.speeds["v_target"]:
                 if not self.reached_v2:
                     self.characteristic_instants["v2"] = {"Instant": self.variables["t"],
-                                                          "Speed": self.variables["v_kt"]}
+                                                          "Speed": self.variables["cas_kt"]}
                     self.reached_v2 = True
                 self.normal_climb()
 
         self.characteristic_instants["v35ft"] = {"Instant": self.variables["t"],
-                                                 "Speed": self.variables["v_kt"]}
+                                                 "Speed": self.variables["cas_kt"]}

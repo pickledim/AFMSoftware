@@ -18,7 +18,7 @@ class RotationPhase(TakeOffPrep):
         mu = self.constants_dict["mu"]
         weight = self.constants_dict["weight"]
         mass = self.constants_dict["mass"]
-        v = self.variables["v"]
+        v = self.variables["cas"]
         thrust = self.variables["thrust"]
 
         # compute the acting forces
@@ -64,7 +64,7 @@ class RotationPhase(TakeOffPrep):
             forces, accel = self.calculate_forces_in_rotation(aoa)
 
             dv = accel * dt
-            dx = 0.5 * accel * dt ** 2 + self.variables["v"] * dt
+            dx = 0.5 * accel * dt ** 2 + self.variables["cas"] * dt
 
             self.variables.update(
                 {
@@ -83,4 +83,4 @@ class RotationPhase(TakeOffPrep):
             aoa0 = aoa
 
         self.characteristic_instants["LiftOff"] = {"Instant": self.variables["t"],
-                                                   "Speed": self.variables["v_kt"]}
+                                                   "Speed": self.variables["cas_kt"]}
