@@ -31,8 +31,8 @@ class GroundRoll(TakeOffPrep):
 
         # check if vef has been reached and adjust thrust accordingly
         if self.vef_inst:
-            if self.variables["v_kt"] < self.speeds["vef"]:
-                self.variables["thrust"] = get_thrust(self.variables["v"], engine_coefs)
+            if self.variables["cas_kt"] < self.speeds["vef"]:
+                self.variables["thrust"] = get_thrust(self.variables["cas"], engine_coefs)
             else:
                 self.variables["thrust"] = self.variables["thrust"]/2
                 self.vef_inst = False
@@ -49,8 +49,8 @@ class GroundRoll(TakeOffPrep):
 
         # calculate thrust, drag, lift, and roll forces
         thrust = self.get_thrust()
-        drag = 0.5 * rho * S * cd0 * self.variables["v"] ** 2
-        lift = 0.5 * rho * S * cl0 * self.variables["v"] ** 2
+        drag = 0.5 * rho * S * cd0 * self.variables["cas"] ** 2
+        lift = 0.5 * rho * S * cl0 * self.variables["cas"] ** 2
         f_roll = abs(mu * (weight - lift))
 
         # calculate net force and acceleration
@@ -77,14 +77,14 @@ class GroundRoll(TakeOffPrep):
 
         self.vef_inst = True
         # loop until rotation speed is reached
-        while self.variables["v_kt"] < vr:
+        while self.variables["cas_kt"] < vr:
 
             # calculate forces
             forces, accel = self.calculate_forces()
 
             # calculate change in velocity and displacement
             dv = accel * dt
-            dx = 0.5 * accel * dt ** 2 + self.variables["v"] * dt
+            dx = 0.5 * accel * dt ** 2 + self.variables["cas"] * dt
 
             # update variables
             self.variables["drag"], self.variables["lift"], self.variables["sf_x"] = \
@@ -95,4 +95,4 @@ class GroundRoll(TakeOffPrep):
             super().update_values()
 
         self.characteristic_instants["Rotation"] = {"Instant": self.variables["t"],
-                                                    "Speed": self.variables["v_kt"]}
+                                                    "Speed": self.variables["cas_kt"]}
