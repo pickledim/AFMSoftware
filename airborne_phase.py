@@ -23,61 +23,61 @@ class AirbornePhase(TakeOffPrep):
 
     def normal_climb(self) -> None:
 
-        v = self.variables["tas"]
-        S = self.constants_dict["S"]
-        # print(self.variables["lift"], self.constants_dict["weight"])
-        # assert self.variables["lift"] == self.constants_dict["weight"]
+        tas = self.variables["tas"]
+        thrust, weight = self.variables["thrust"], self.constants_dict["weight"]
+        rho, S, mass = self.rho, self.constants_dict["S"], self.variables["mass"]
 
-        # self.variables["drag"] = 0.5 * rho * S * self.f_cd(self.variables["aoa"]) * v ** 2
+        # In order to reach constant climb -> W=L -> find the corresponding cl and cd
+        cl = 2 * weight / (rho * S * tas ** 2)
+        self.variables["lift"] = 0.5 * (self.rho * S * cl * tas ** 2)
 
-        # TODO: in order to reach constant climb -> W=L
+        cd = self.drag_polar(cl ** 2)
+        self.variables["drag"] = 0.5 * (self.rho * S * cd * tas ** 2)
+
+        self.variables["aoa"] = self.f_a_cd(cd)
+
+        # self.variables["gamma_rad"] = (self.variables["thrust"] * np.cos(uc.deg2rad(self.variables["aoa"])) /
+        #                                self.constants_dict["weight"]) - (cd / cl)
+
+        # aafp p299
+        t_aero = thrust * np.cos(np.deg2rad(self.variables["aoa"]))
+        self.variables["gamma_rad"] = (t_aero - self.variables["drag"]) / self.constants_dict["weight"]
+
+        # aafp p306
+        dgamma = (thrust * np.sin(np.radians(self.variables["aoa"])) + self.variables["lift"] - weight) / \
+                 (mass * tas) * self.variables["dt"]
+
+        self.variables["gamma_rad"] += dgamma
+        self.variables["gamma"] = np.degrees(self.variables["gamma_rad"])
 
 
-        print(f'V2min reached @ {round(float(self.variables["height"]), 2)}ft!')
-        #
-        while self.variables["height"] < 35.:
-            cl = 2 * self.constants_dict["weight"] / (self.rho * S * v ** 2)
-            self.variables["lift"] = 0.5 * (self.rho * S * cl * v ** 2)
+        # update
 
-            cd = self.drag_polar(cl ** 2)
-            self.variables["drag"] = 0.5 * (self.rho * S * cd * v ** 2)
-            self.variables["aoa"] = self.f_a_cd(cd)
-            # cheating
-            # self.variables["teta"] = self.constants_dict["teta_target"]
-            #
-            # self.variables["gamma"] = self.variables["teta"] - self.variables["aoa"]
-            # TODO: try to change the df with a step
-            # df = pd.DataFrame(self.event_log)
-            # df["accel_tas"] = np.gradient(df["tas_kt_log"], df["t_log"], edge_order=2)
-            # a = self.variables["accel_tas"] = df["accel_tas"].iloc[-1]
-            # self.pid_control()
-            # T_aero = self.variables["thrust"] * np.cos(np.radians(self.variables["aoa"]))
-            # self.variables["gamma_rad"] = (T_aero - self.variables["drag"] - self.constants_dict["weight"] / 9.81 * a) \
-            #                               / self.constants_dict["weight"]
-            # (t_aero - drag - weight * np.sin(np.deg2rad(gamma))) / mass
-            self.variables["gamma_rad"] = (self.variables["thrust"] * np.cos(uc.deg2rad(self.variables["aoa"])) /
-                                           self.constants_dict["weight"]) - (cd / cl)
-            self.variables["gamma"] = np.degrees(self.variables["gamma_rad"])
-            self.variables["v_z"] = self.variables["tas"] * np.sin(self.variables["gamma_rad"])
-            self.variables["teta"] = self.variables["gamma"] + self.variables["aoa"]
+        # dh = self.variables["tas"] * np.sin(self.variables["gamma_rad"]) * self.variables["dt"]
+        # self.variables["dv"] = 0
+        # self.variables["dx"] = self.variables["tas"] * np.cos(self.variables["gamma_rad"]) * self.variables["dt"]
+        # self.variables["v_z"] = self.variables["tas"] * np.sin(self.variables["gamma_rad"])
+        # self.variables["height"] += uc.m2ft(dh)
+        # self.rho = Atmosphere(uc.ft2m(self.variables["height"])).density
+        # self.variables["tas"] = (self.rho0 / self.rho) ** 0.5 * self.variables["cas"]
 
-            self.variables["dv"] = 0
-            self.variables["dx"] = self.variables["tas"] * np.cos(self.variables["gamma_rad"]) * self.variables["dt"]
-
-            #                 if _bool:
-            dh = self.variables["tas"] * np.sin(self.variables["gamma_rad"]) * self.variables["dt"]
-            # update
-            self.variables["height"] += uc.m2ft(dh)
-            self.rho = Atmosphere(uc.ft2m(self.variables["height"])).density
-            self.variables["tas"] = (self.rho0 / self.rho) ** 0.5 * self.variables["cas"]
-
-            super().update_values()
+            # super().update_values()
 
     def calculate_angles(self):
+        aoa, gamma = self.variables['aoa'], self.variables['gamma']
+        thrust, v = self.variables["thrust"], self.variables["cas"]
+        rho, S = self.rho, self.constants_dict["S"]
+        weight, mass = self.constants_dict['weight'], self.constants_dict['mass']
 
-        thrust = self.variables["thrust"]
-        weight = self.constants_dict["weight"]
+        tas = self.variables["tas"] = (rho / self.rho0) ** 0.5 * v
 
+        T_aero = thrust * np.cos(np.radians(aoa))
+
+        drag = 0.5 * rho * S * self.f_cd(aoa) * tas ** 2
+        #
+        # accel = (self.variables["tas"] - uc.kt2ms(self.event_log["tas_kt_log"][-1])) / self.variables["dt"]
+        #
+        self.variables["gamma_rad"] = (T_aero - drag - mass * (self.variables["dv"] / self.variables["dt"])) / weight
         # advanced ac perfo p306
         dgamma = (thrust * np.sin(np.radians(self.variables["aoa"])) + self.variables["lift"] - weight) / \
                  (self.variables["mass"] * self.variables["tas"]) * self.variables["dt"]
@@ -100,7 +100,7 @@ class AirbornePhase(TakeOffPrep):
         T_aero = thrust * np.cos(np.radians(aoa))
 
         drag = 0.5 * rho * S * self.f_cd(aoa) * tas ** 2
-        
+
         lift = 0.5 * rho * S * self.f_cl(aoa) * tas ** 2
 
         SFx = T_aero - drag - weight * np.sin(np.radians(gamma))
@@ -121,18 +121,20 @@ class AirbornePhase(TakeOffPrep):
         #                        (self.variables["v"]/9.81 * self.variables["accel"])
         self.variables["v_z"] = self.variables["tas"] * np.sin(self.variables["gamma_rad"])
 
-        self.variables["dv"] = self.variables["accel"] * self.variables["dt"]
+        if self.reached_v2:
+            self.variables["dv"] = 0
+        else:
+            self.variables["dv"] = self.variables["accel"] * self.variables["dt"]
 
         self.variables["dx"] = self.variables["tas"] * np.cos(self.variables["gamma_rad"]) * self.variables["dt"]
         # dh * np.tan(gamma_rad)
 
-        dh = self.variables["cas"] * np.sin(self.variables["gamma_rad"]) * self.variables["dt"]  # a_z*dt**2 + v_z * dt
+        dh = self.variables["tas"] * np.sin(self.variables["gamma_rad"]) * self.variables["dt"]  # a_z*dt**2 + v_z * dt
 
         # update
         self.variables["height"] += uc.m2ft(dh)
         self.rho = Atmosphere(uc.ft2m(self.variables["height"])).density
         self.variables["tas"] = (self.rho0 / self.rho) ** 0.5 * self.variables["cas"]
-
 
     def airborne_phase(self) -> None:
 
@@ -150,34 +152,39 @@ class AirbornePhase(TakeOffPrep):
 
         while self.variables["height"] < 35.:
 
-            # control alpha in order to get 0 accel
-            self.pid_control()
+            # CAS accelerating climb
+            if not self.reached_v2:
+                # control alpha in order to get 0 accel
+                self.pid_control()
 
-            # get the new angles
-            self.calculate_angles()
+                # get the new angles
+                self.calculate_angles()
 
-            # get the forces
-            forces, accel = self.calculate_equations_of_motion()
+                # get the forces
+                forces, accel = self.calculate_equations_of_motion()
 
-            self.variables.update(
-                {
-                    "drag": forces["Drag"],
-                    "lift": forces["Lift"],
-                    "sf_x": forces["F_x"],
-                    "accel": accel
-                }
-            )
-
-            self.update_aerial_values()
-
-            super().update_values()
+                self.variables.update(
+                    {
+                        "drag": forces["Drag"],
+                        "lift": forces["Lift"],
+                        "sf_x": forces["F_x"],
+                        "accel": accel
+                    }
+                )
+                # self.update_aerial_values()
+            # CAS steady climb
+            else:
+                self.normal_climb()
 
             if self.variables["cas_kt"] >= self.speeds["v_target"]:
                 if not self.reached_v2:
+                    print(f'V2min reached @ {round(float(self.variables["height"]), 2)}ft!')
                     self.characteristic_instants["v2"] = {"Instant": self.variables["t"],
                                                           "Speed": self.variables["cas_kt"]}
                     self.reached_v2 = True
-                self.normal_climb()
+
+            self.update_aerial_values()
+            super().update_values()
 
         self.characteristic_instants["v35ft"] = {"Instant": self.variables["t"],
                                                  "Speed": self.variables["cas_kt"]}
