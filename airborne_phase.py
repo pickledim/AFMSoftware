@@ -11,16 +11,26 @@ from take_off_env import TakeOffPrep
 
 
 class AirbornePhase(TakeOffPrep):
-
+    """
+    Simulates the airborne phase of the aircraft's flight.
+    """
     def pid_control(self) -> None:
+        """
+        Use a PID controller to adjust the stick input based on the difference between the target and
+        current acceleration.
+        """
 
         # Use the PID controller to adjust the throttle based on the difference between the target and
         # current angle of attack
-        throttle_adjustment = self.pid_acceleration(self.target_acceleration - self.variables["accel_tas"])
+        stick_adjustment = self.pid_acceleration(self.target_acceleration - self.variables["accel"])
 
-        self.variables["aoa"] += throttle_adjustment * 1e-2
+        self.variables["aoa"] += stick_adjustment * 1e-2
 
     def normal_climb(self) -> None:
+        """
+        Calculate the aircraft's motion during a steady climb, using equations of motion for a constant climb
+        and a drag polar. Update the aircraft's state.
+        """
 
         tas = self.variables["tas"]
         thrust, weight = self.variables["thrust"], self.constants_dict["weight"]
@@ -51,6 +61,10 @@ class AirbornePhase(TakeOffPrep):
         self.variables["gamma"] = np.degrees(self.variables["gamma_rad"])
 
     def calculate_angles(self) -> None:
+        """
+        Calculate the aircraft's angle of attack, flight path angle, and other quantities related to the
+        aircraft's motion.
+        """
 
         aoa, gamma = self.variables['aoa'], self.variables['gamma']
         thrust, v = self.variables["thrust"], self.variables["cas"]
@@ -78,7 +92,13 @@ class AirbornePhase(TakeOffPrep):
         self.variables["teta"] = self.variables["aoa"] + self.variables["gamma"]
 
     def calculate_equations_of_motion(self) -> Tuple[Dict[str, float], float]:
+        """
+        Calculate the forces and acceleration acting on the aircraft using equations of motion for an aircraft in
+        accelerating climb.
 
+        Return a dictionary containing the drag, lift, and net force acting on the aircraft,
+        as well as the aircraft's acceleration.
+        """
         aoa, gamma = self.variables['aoa'], self.variables['gamma']
         thrust, v = self.variables["thrust"], self.variables["cas"]
         rho, S = self.rho, self.constants_dict["S"]
@@ -104,7 +124,9 @@ class AirbornePhase(TakeOffPrep):
         return forces, accel
 
     def update_aerial_values(self) -> None:
-
+        """
+        Update the aircraft's velocities, change in altitude, and change in horizontal position.
+        """
         # self.variables["v_z"] = (self.variables["thrust"] - self.variables["drag"]) / weight * self.variables["v"] - \
         #                        (self.variables["v"]/9.81 * self.variables["accel"])
         self.variables["v_z"] = self.variables["tas"] * np.sin(self.variables["gamma_rad"])
@@ -125,6 +147,16 @@ class AirbornePhase(TakeOffPrep):
         self.variables["tas"] = (self.rho0 / self.rho) ** 0.5 * self.variables["cas"]
 
     def airborne_phase(self) -> None:
+        """
+        Simulates the airborne phase of the aircraft's flight.
+
+        During this phase, the aircraft climbs from takeoff to a height of 35 ft. The climb is divided into two parts:
+        an accelerating climb until the minimum takeoff safety speed V2 is reached, and a steady climb after that.
+        The function updates the aircraft's state variables at each iteration and saves the and characteristic instants.
+
+        Returns:
+            None.
+        """
 
         # super().transition_phase()
         # TODO: Study the climb part p299 the Vz is low

@@ -7,8 +7,19 @@ from take_off_env import TakeOffPrep
 
 
 class RotationPhase(TakeOffPrep):
+    """
+    Performs the rotation phase of takeoff, increasing the aircraft's pitch angle until lift off.
+    """
     def calculate_forces_in_rotation(self, aoa: float) -> Tuple[Dict[str, float], float]:
+        """
+        Calculates the forces acting on the aircraft during rotation phase for a given angle of attack.
 
+        Args:
+            aoa (float): Angle of attack in degrees.
+
+        Returns:
+            Tuple[Dict[str, float], float]: Tuple containing a dictionary of forces and the resulting acceleration.
+        """
         # redefine the variables from the class for ease of reading
         f_cl = self.f_cl
         f_cd = self.f_cd
@@ -43,6 +54,12 @@ class RotationPhase(TakeOffPrep):
         return forces, accel
 
     def transition_phase(self) -> None:
+        """
+        Performs the rotation phase of takeoff, increasing the aircraft's pitch angle until lift off.
+
+        Returns:
+            None
+        """
 
         self.variables["need_to_increase_Vr"] = False
 

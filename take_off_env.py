@@ -16,6 +16,38 @@ import unit_conversion as uc
 
 
 class TakeOffPrep(object):
+    """
+    A class used to represent the preparation for a takeoff
+
+    ...
+
+    Attributes
+    ----------
+    mass : float
+        the mass of the aircraft [kg]
+    conf : str
+        the configuration of the aircraft
+    zp : float
+        the altitude of the airport [ft]
+    lg : str
+        the landing gear
+    eng_state : str
+        the engine state
+    timestep : float
+        the time step
+
+    Methods
+    -------
+    calculate_stall_speed()
+        calculates the stall speed
+    get_vmu()
+        calculates the minimum unstick speed
+    define_characteristic_speeds()
+        defines the characteristic speeds
+    calculate_v2_jar()
+        calculates the takeoff safety speed
+
+    """
     def __init__(
             self,
             mass: float,
@@ -25,7 +57,25 @@ class TakeOffPrep(object):
             eng_state: str,
             timestep: float
     ):
+        """
+        Constructs necessary attributes for TakeOffPrep object.
 
+        Parameters
+        ----------
+        mass : float
+            the mass of the aircraft [kg]
+        conf : str
+            the configuration of the aircraft
+        zp : float
+            the altitude of the airport [ft]
+        lg : str
+            the landing gear
+        eng_state : str
+            the engine state
+        timestep : float
+            the time step
+
+        """
         # performance data
         self.mass = mass
         self.conf = conf
@@ -100,7 +150,16 @@ class TakeOffPrep(object):
         self.characteristic_instants = dict()
 
     def calculate_stall_speed(self) -> None:
+        """
+        Calculates the stall speed of the aircraft in knots.
 
+        Args:
+            self (Aircraft): An instance of the Aircraft class.
+
+        Returns:
+            None: This function does not return anything. It updates the 'v_sta' attribute of the Aircraft instance with
+             the calculated stall speed in knots.
+        """
         weight, rho, s, clmax = self.constants_dict["weight"], self.constants_dict["rho"], self.constants_dict["S"],\
                                 self.constants_dict["clmax"]
 
@@ -113,6 +172,17 @@ class TakeOffPrep(object):
         self.vmu = kVs * self.v_sta  # [kt]
 
     def define_characteristic_speeds(self) -> None:
+        """
+        Calculates and sets the characteristic speeds of the aircraft using the previously calculated constants.
+
+        This method calculates and sets the characteristic speeds of the aircraft, including V2min, VR, VEF, VMU, VMCA,
+        and V_stall. The values of these speeds are calculated using the previously calculated constants for the weight,
+        air density, wing area, and maximum lift coefficient.
+
+        Returns:
+            None
+        """
+
 
         v2min = max(1.13*self.v_sta, 1.1*self.vmca, self.vmu)  # [kt]
         vr = max(1.05*self.v_sta, 1.05*self.vmca)  # [kt] # [kt]
@@ -128,6 +198,24 @@ class TakeOffPrep(object):
         }
 
     def calculate_v2_jar(self) -> None:
+        """
+        Calculates the target takeoff safety speed (V2) according to the JAR25.121(b) regulation.
+
+        The JAR25.121(b) regulation requires that the minimum target takeoff safety speed (V2) must be at least
+        1.13 times the stall speed (Vstall) or 1.1 times the minimum control speed in the air (Vmca), whichever is
+        greater, and not less than the minimum unstick speed (Vmu).
+
+        This method calculates V2 according to the JAR25.121(b) regulation by first determining the lift coefficient
+        and drag coefficient at 400 ft above sea level. If the resulting climb gradient at this altitude is less than
+        2.4%, then the V2 target must be adjusted to meet the regulation. Otherwise, V2 remains at the minimum target
+        speed.
+
+        Parameters:
+            None
+
+        Returns:
+            None
+        """
 
         # constants
         weight, s, v2min = self.constants_dict["weight"], self.constants_dict["S"], self.speeds["v2min"]
@@ -155,6 +243,47 @@ class TakeOffPrep(object):
         self.speeds["v_target"] = v_target
 
     def initialize_data(self) -> None:
+        """
+        Initializes the variables and event logs for the simulation.
+
+        Variables:
+            - t: float, time [s]
+            - x: float, distance traveled [m]
+            - cas: float, calibrated airspeed [m/s]
+            - tas: float, true airspeed [m/s]
+            - cas_kt: float, calibrated airspeed [kt]
+            - tas_kt: float, true airspeed [kt]
+            - accel_cas: float, calibrated airspeed acceleration [m/s^2]
+            - accel_tas: float, true airspeed acceleration [m/s^2]
+            - dv: float, change in velocity [m/s]
+            - dx: float, change in distance [m]
+
+            - height: float, height above sea level [m]
+            - v_z: float, vertical speed [m/s]
+
+            - gamma: float, flight path angle [%]
+            - gamma_rad: float, flight path angle [rad]
+            - teta: float, pitch angle [deg]
+            - aoa: float, angle of attack [deg]
+
+            - sf_x: float, ground speed [m/s]
+            - mass: float, aircraft mass [kg]
+            - dt: float, time step size [s]
+
+        Event log:
+            - t_log: list, log of time values [s]
+            - x_log: list, log of distance values [m]
+            - height_log: list, log of height values [m]
+            - cas_kt_log: list, log of calibrated airspeed values [kt]
+            - tas_kt_log: list, log of true airspeed values [kt]
+            - vz_log: list, log of vertical speed values [m/s]
+            - teta_log: list, log of pitch angle values [deg]
+            - alpha_log: list, log of angle of attack values [deg]
+            - gamma_log: list, log of flight path angle values [%]
+            - thrust_log: list, log of thrust values [N]
+            - lift_log: list, log of lift values [N]
+            - drag_log: list, log of drag values [N]
+        """
 
         self.variables = {
             "t": 0.,
@@ -197,6 +326,35 @@ class TakeOffPrep(object):
         }
 
     def update_values(self) -> None:
+        """
+        Update the values of the simulation parameters based on the current state of the aircraft.
+
+        Modifies the following variables in self.variables dictionary:
+        - cas
+        - tas
+        - x
+        - t
+        - cas_kt
+        - tas_kt
+        - rho
+
+        Modifies the following variables in self.event_log dictionary:
+        - cas_kt_log
+        - tas_kt_log
+        - t_log
+        - x_log
+        - gamma_log
+        - vz_log
+        - height_log
+        - thrust_log
+        - lift_log
+        - drag_log
+        - teta_log
+        - alpha_log
+
+        Returns:
+        - None
+        """
 
         self.variables["cas"] += self.variables["dv"]
         self.variables["tas"] += self.variables["dv"]
@@ -222,6 +380,14 @@ class TakeOffPrep(object):
         self.event_log["alpha_log"].append(float(self.variables["aoa"]))
 
     def pilot_preparation(self) -> None:
+        """
+        Prepares the pilot by calling several methods:
+        - calculate_stall_speed: calculates the stall speed of the aircraft
+        - get_vmu: gets the minimum unstick speed
+        - define_characteristic_speeds: defines the characteristic speeds of the aircraft
+        - calculate_v2_jar: calculates V2 for the given altitude and weight
+        - initialize_data: initializes the data dictionary and event log for the simulation
+        """
 
         self.calculate_stall_speed()
         self.get_vmu()

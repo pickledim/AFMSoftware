@@ -8,10 +8,14 @@ from take_off_env import TakeOffPrep
 
 def get_thrust(speed: float, coefs: list) -> np.array:
     """
+    Calculate the thrust produced by the aircraft's engine based on the speed and a list of coefficients.
 
-    :param speed:
-    :param coefs:
-    :return:
+    Args:
+        speed (float): The speed of the aircraft in knots.
+        coefs (list): A list of 8 coefficients representing the engine thrust as a polynomial function of speed.
+
+    Returns:
+        float: The thrust produced by the engine in Newtons.
     """
 
     speed_vector = np.array([1, speed, speed ** 2, speed ** 3, speed ** 4, speed ** 5, speed ** 6, speed ** 7],
@@ -24,8 +28,24 @@ def get_thrust(speed: float, coefs: list) -> np.array:
 
 
 class GroundRoll(TakeOffPrep):
+    """
+    A class representing the ground roll phase of an aircraft takeoff.
 
+    Attributes:
+    constants_dict (dict): A dictionary of constants used in the calculations.
+    speeds (dict): A dictionary of speeds used in the calculations.
+    variables (dict): A dictionary of variables used in the calculations.
+    characteristic_instants (dict): A dictionary of characteristic instants in the takeoff process.
+
+    """
     def get_thrust(self) -> float:
+        """
+        Get the thrust produced by the engine.
+
+        Returns:
+        float: The thrust produced by the engine.
+
+        """
 
         engine_coefs = self.constants_dict["engine_coefs"]
 
@@ -40,6 +60,13 @@ class GroundRoll(TakeOffPrep):
         return self.variables["thrust"]
 
     def calculate_forces(self,) -> Tuple[dict, float]:
+        """
+        Calculate the forces acting on the aircraft during the ground roll.
+
+        Returns:
+        Tuple[dict, float]: A tuple containing a dictionary of forces and the acceleration of the aircraft.
+
+        """
 
         rho, S, cd0, cl0, mu = self.constants_dict["rho"], self.constants_dict["S"], \
                                self.constants_dict["cd0"], self.constants_dict["cl0"], \
