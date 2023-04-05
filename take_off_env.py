@@ -173,7 +173,7 @@ class TakeOffPrep(object):
 
             "gamma": 0,
             "gamma_rad": 0,
-            "teta": 0,
+            "teta": self.config_data['alpha_min'],
             "aoa": self.config_data['alpha_min'],
 
             "sf_x": 0,
@@ -188,8 +188,8 @@ class TakeOffPrep(object):
             "cas_kt_log": [0],
             "tas_kt_log": [0],
             "vz_log": [0],
-            "teta_log": [0],
-            "alpha_log": [0],
+            "teta_log": [self.variables["aoa"]],
+            "alpha_log": [self.variables["aoa"]],
             "gamma_log": [0],
             "thrust_log": [0],
             "lift_log": [0],
