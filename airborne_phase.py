@@ -22,9 +22,13 @@ class AirbornePhase(TakeOffPrep):
 
         # Use the PID controller to adjust the throttle based on the difference between the target and
         # current angle of attack
-        stick_adjustment = self.pid_acceleration(self.target_acceleration - self.variables["accel"])
+        diff = self.target_acceleration - self.variables["accel"]
+        if diff > 0:
+            print()
+        stick_adjustment = diff #self.pid_acceleration(diff)
 
-        self.variables["aoa"] += stick_adjustment * 1e-2
+        self.variables["aoa"] -= stick_adjustment *1e-1
+        print(self.variables["aoa"])
 
     def normal_climb(self) -> None:
         """
@@ -73,19 +77,21 @@ class AirbornePhase(TakeOffPrep):
 
         tas = self.variables["tas"] = (rho / self.rho0) ** 0.5 * v
 
-        T_aero = thrust * np.cos(np.radians(aoa))
-
-        drag = 0.5 * rho * S * self.f_cd(aoa) * tas ** 2
+        T_aero = thrust * np.sin(np.radians(aoa))
+        cos_gama = np.cos(np.radians(self.variables['gamma']))
+        drag = 0.5 * rho * S * self.f_cd(aoa)  * tas ** 2
+        lift = 0.5 * rho * S * self.f_cl(aoa)  * tas ** 2
         #
         # accel = (self.variables["tas"] - uc.kt2ms(self.event_log["tas_kt_log"][-1])) / self.variables["dt"]
         #
-        self.variables["gamma_rad"] = (T_aero - drag - mass * (self.variables["dv"] / self.variables["dt"])) / weight
+        # self.variables["gamma_rad"] = (T_aero - drag - mass * (self.variables["dv"] / self.variables["dt"])) / weight
 
         # advanced ac perfo p306
-        dgamma = (thrust * np.sin(np.radians(self.variables["aoa"])) + self.variables["lift"] - weight) / \
+        # * np.sin(np.radians(self.variables["aoa"]))
+        dgamma = (T_aero + lift - weight * cos_gama) / \
                  (self.variables["mass"] * self.variables["tas"]) * self.variables["dt"]
 
-        # self.variables["gamma_rad"] += dgamma
+        self.variables["gamma_rad"] += dgamma
 
         self.variables["gamma"] = np.degrees(self.variables["gamma_rad"])
 
@@ -105,6 +111,7 @@ class AirbornePhase(TakeOffPrep):
         weight, mass = self.constants_dict['weight'], self.constants_dict['mass']
         tas = self.variables["tas"]  # = (rho/self.rho0)**0.5 * v
 
+
         T_aero = thrust * np.cos(np.radians(aoa))
 
         drag = 0.5 * rho * S * self.f_cd(aoa) * tas ** 2
@@ -114,6 +121,7 @@ class AirbornePhase(TakeOffPrep):
         SFx = T_aero - drag - weight * np.sin(np.radians(gamma))
 
         accel = SFx / mass
+        print(accel)
 
         forces = {
             "Drag": drag,
@@ -168,7 +176,7 @@ class AirbornePhase(TakeOffPrep):
         self.target_acceleration = 0.0  # [m/s^2]
 
         # Define the PID controller for acceleration
-        self.pid_acceleration = simple_pid.PID(1.0, 0.1, 0.05, setpoint=self.target_acceleration)
+        # self.pid_acceleration = simple_pid.PID(0.3, 0.05, 0.02, setpoint=self.target_acceleration)
 
         while self.variables["height"] < 35.:
 
@@ -193,15 +201,15 @@ class AirbornePhase(TakeOffPrep):
                 )
 
             # CAS steady climb
-            else:
-                self.normal_climb()
-
-            if self.variables["cas_kt"] >= self.speeds["v_target"]:
-                if not self.reached_v2:
-                    print(f'V2min reached @ {round(float(self.variables["height"]), 2)}ft!')
-                    self.characteristic_instants["v2"] = {"Instant": self.variables["t"],
-                                                          "Speed": self.variables["cas_kt"]}
-                    self.reached_v2 = True
+            # else:
+            #     self.normal_climb()
+            #
+            # if self.variables["cas_kt"] >= self.speeds["v_target"]:
+            #     if not self.reached_v2:
+            #         print(f'V2min reached @ {round(float(self.variables["height"]), 2)}ft!')
+            #         self.characteristic_instants["v2"] = {"Instant": self.variables["t"],
+            #                                               "Speed": self.variables["cas_kt"]}
+            #         self.reached_v2 = True
 
             self.update_aerial_values()
             super().update_values()
