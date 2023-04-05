@@ -22,10 +22,13 @@ class AirbornePhase(TakeOffPrep):
 
         # Use the PID controller to adjust the throttle based on the difference between the target and
         # current angle of attack
-        stick_adjustment = self.pid_acceleration(self.target_acceleration - self.variables["accel"])
-
-        self.variables["aoa"] += stick_adjustment * 1e-2
-
+        stick_adjustment = self.target_acceleration - self.variables["accel"]#self.pid_acceleration()
+        k = self.variables["aoa"] - stick_adjustment
+        if k <= self.constants_dict["aoa_max"]:
+            self.variables["aoa"] -= stick_adjustment
+        else:
+            self.variables["aoa"] = self.constants_dict["aoa_max"]
+        print(self.variables["aoa"])
     def normal_climb(self) -> None:
         """
         Calculate the aircraft's motion during a steady climb, using equations of motion for a constant climb
@@ -73,19 +76,19 @@ class AirbornePhase(TakeOffPrep):
 
         tas = self.variables["tas"] = (rho / self.rho0) ** 0.5 * v
 
-        T_aero = thrust * np.cos(np.radians(aoa))
+        # T_aero = thrust * np.cos(np.radians(aoa))
 
         drag = 0.5 * rho * S * self.f_cd(aoa) * tas ** 2
         #
         # accel = (self.variables["tas"] - uc.kt2ms(self.event_log["tas_kt_log"][-1])) / self.variables["dt"]
         #
-        self.variables["gamma_rad"] = (T_aero - drag - mass * (self.variables["dv"] / self.variables["dt"])) / weight
-
+        # self.variables["gamma_rad"] = (T_aero - drag - mass * (self.variables["dv"] / self.variables["dt"])) / weight
+        sin_gama = np.sin(np.radians(self.variables["gamma"]))
         # advanced ac perfo p306
         dgamma = (thrust * np.sin(np.radians(self.variables["aoa"])) + self.variables["lift"] - weight) / \
                  (self.variables["mass"] * self.variables["tas"]) * self.variables["dt"]
 
-        # self.variables["gamma_rad"] += dgamma
+        self.variables["gamma_rad"] += dgamma
 
         self.variables["gamma"] = np.degrees(self.variables["gamma_rad"])
 
@@ -131,10 +134,10 @@ class AirbornePhase(TakeOffPrep):
         #                        (self.variables["v"]/9.81 * self.variables["accel"])
         self.variables["v_z"] = self.variables["tas"] * np.sin(self.variables["gamma_rad"])
 
-        if self.reached_v2:
-            self.variables["dv"] = 0
-        else:
-            self.variables["dv"] = self.variables["accel"] * self.variables["dt"]
+        # if self.reached_v2:
+        #     self.variables["dv"] = 0
+        # else:
+        self.variables["dv"] = self.variables["accel"] * self.variables["dt"]
 
         self.variables["dx"] = self.variables["tas"] * np.cos(self.variables["gamma_rad"]) * self.variables["dt"]
         # dh * np.tan(gamma_rad)
@@ -168,33 +171,33 @@ class AirbornePhase(TakeOffPrep):
         self.target_acceleration = 0.0  # [m/s^2]
 
         # Define the PID controller for acceleration
-        self.pid_acceleration = simple_pid.PID(1.0, 0.1, 0.05, setpoint=self.target_acceleration)
+        # self.pid_acceleration = simple_pid.PID(1, 0.1, 1e-4, setpoint=self.target_acceleration)
 
         while self.variables["height"] < 35.:
 
             # CAS accelerating climb
-            if not self.reached_v2:
+            # if not self.reached_v2:
                 # control alpha in order to get 0 accel
-                self.pid_control()
+            self.pid_control()
 
-                # get the new angles
-                self.calculate_angles()
+            # get the new angles
+            self.calculate_angles()
 
-                # get the forces
-                forces, accel = self.calculate_equations_of_motion()
+            # get the forces
+            forces, accel = self.calculate_equations_of_motion()
 
-                self.variables.update(
-                    {
-                        "drag": forces["Drag"],
-                        "lift": forces["Lift"],
-                        "sf_x": forces["F_x"],
-                        "accel": accel
-                    }
-                )
+            self.variables.update(
+                {
+                    "drag": forces["Drag"],
+                    "lift": forces["Lift"],
+                    "sf_x": forces["F_x"],
+                    "accel": accel
+                }
+            )
 
             # CAS steady climb
-            else:
-                self.normal_climb()
+            # else:
+            #     self.normal_climb()
 
             if self.variables["cas_kt"] >= self.speeds["v_target"]:
                 if not self.reached_v2:
