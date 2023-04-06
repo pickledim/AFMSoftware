@@ -48,6 +48,7 @@ class TakeOffPrep(object):
         calculates the takeoff safety speed
 
     """
+
     def __init__(
             self,
             mass: float,
@@ -160,8 +161,8 @@ class TakeOffPrep(object):
             None: This function does not return anything. It updates the 'v_sta' attribute of the Aircraft instance with
              the calculated stall speed in knots.
         """
-        weight, rho, s, clmax = self.constants_dict["weight"], self.constants_dict["rho"], self.constants_dict["S"],\
-                                self.constants_dict["clmax"]
+        weight, rho, s, clmax = self.constants_dict["weight"], self.constants_dict["rho"], \
+                                self.constants_dict["S"], self.constants_dict["clmax"]
 
         v_stall = math.sqrt((2 * weight / (rho * s * clmax)))  # [m/s]
         self.v_sta = uc.ms2kt(v_stall)  # [kt]
@@ -183,9 +184,8 @@ class TakeOffPrep(object):
             None
         """
 
-
-        v2min = max(1.13*self.v_sta, 1.1*self.vmca, self.vmu)  # [kt]
-        vr = max(1.05*self.v_sta, 1.05*self.vmca)  # [kt] # [kt]
+        v2min = max(1.13 * self.v_sta, 1.1 * self.vmca, self.vmu)  # [kt]
+        vr = max(1.05 * self.v_sta, 1.05 * self.vmca)  # [kt] # [kt]
         vef = vr - 2  # [kt]
 
         self.speeds = {
@@ -209,9 +209,6 @@ class TakeOffPrep(object):
         and drag coefficient at 400 ft above sea level. If the resulting climb gradient at this altitude is less than
         2.4%, then the V2 target must be adjusted to meet the regulation. Otherwise, V2 remains at the minimum target
         speed.
-
-        Parameters:
-            None
 
         Returns:
             None
@@ -270,6 +267,8 @@ class TakeOffPrep(object):
             - mass: float, aircraft mass [kg]
             - dt: float, time step size [s]
 
+            - need_to_increase_Vr: boolean
+
         Event log:
             - t_log: list, log of time values [s]
             - x_log: list, log of distance values [m]
@@ -307,22 +306,24 @@ class TakeOffPrep(object):
 
             "sf_x": 0,
             "mass": self.mass,
-            "dt": self.dt  # timestep
+            "dt": self.dt,  # timestep
+
+            "need_to_increase_Vr": False
         }
 
         self.event_log = {
-            "t_log": [0],
-            "x_log": [0],
-            "height_log": [0],
-            "cas_kt_log": [0],
-            "tas_kt_log": [0],
+            "t_log": [0.],
+            "x_log": [0.],
+            "height_log": [0.],
+            "cas_kt_log": [0.],
+            "tas_kt_log": [0.],
             "vz_log": [0],
             "teta_log": [self.variables["aoa"]],
             "alpha_log": [self.variables["aoa"]],
-            "gamma_log": [0],
-            "thrust_log": [0],
-            "lift_log": [0],
-            "drag_log": [0]
+            "gamma_log": [0.],
+            "thrust_log": [0.],
+            "lift_log": [0.],
+            "drag_log": [0.]
         }
 
     def update_values(self) -> None:
@@ -378,6 +379,16 @@ class TakeOffPrep(object):
         self.event_log["drag_log"].append(float(self.variables["drag"]))
         self.event_log["teta_log"].append(float(self.variables["teta"]))
         self.event_log["alpha_log"].append(float(self.variables["aoa"]))
+
+    def check_if_v2_reached(self) -> None:
+        """
+        Checks if the a/c reached the v2 min.
+
+        :return: None
+        """
+
+        if self.variables["need_to_increase_Vr"]:
+            print("Increase VR the a/c cannot reach target :(\n")
 
     def pilot_preparation(self) -> None:
         """
