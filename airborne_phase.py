@@ -3,8 +3,6 @@ import numpy as np
 
 from ambiance import Atmosphere
 
-import simple_pid
-
 import unit_conversion as uc
 
 from take_off_env import TakeOffPrep
@@ -14,21 +12,23 @@ class AirbornePhase(TakeOffPrep):
     """
     Simulates the airborne phase of the aircraft's flight.
     """
-    def pid_control(self) -> None:
+    def k_control(self) -> None:
         """
-        Use a PID controller to adjust the stick input based on the difference between the target and
+        Use a gain controller to adjust the stick input based on the difference between the target and
         current acceleration.
         """
 
         # Use the PID controller to adjust the throttle based on the difference between the target and
         # current angle of attack
-        stick_adjustment = self.target_acceleration - self.variables["accel"]#self.pid_acceleration()
+        stick_adjustment = self.target_acceleration - self.variables["accel"]
         k = self.variables["aoa"] - stick_adjustment
+
         if k <= self.constants_dict["aoa_max"]:
             self.variables["aoa"] -= stick_adjustment
         else:
+            # saturate alpha
             self.variables["aoa"] = self.constants_dict["aoa_max"]
-        print(self.variables["aoa"])
+
     def normal_climb(self) -> None:
         """
         Calculate the aircraft's motion during a steady climb, using equations of motion for a constant climb
@@ -69,23 +69,12 @@ class AirbornePhase(TakeOffPrep):
         aircraft's motion.
         """
 
-        aoa, gamma = self.variables['aoa'], self.variables['gamma']
         thrust, v = self.variables["thrust"], self.variables["cas"]
-        rho, S = self.rho, self.constants_dict["S"]
         weight, mass = self.constants_dict['weight'], self.constants_dict['mass']
+        cos_gama = np.cos(np.radians(self.variables["gamma"]))
 
-        tas = self.variables["tas"] = (rho / self.rho0) ** 0.5 * v
-
-        # T_aero = thrust * np.cos(np.radians(aoa))
-
-        drag = 0.5 * rho * S * self.f_cd(aoa) * tas ** 2
-        #
-        # accel = (self.variables["tas"] - uc.kt2ms(self.event_log["tas_kt_log"][-1])) / self.variables["dt"]
-        #
-        # self.variables["gamma_rad"] = (T_aero - drag - mass * (self.variables["dv"] / self.variables["dt"])) / weight
-        sin_gama = np.sin(np.radians(self.variables["gamma"]))
         # advanced ac perfo p306
-        dgamma = (thrust * np.sin(np.radians(self.variables["aoa"])) + self.variables["lift"] - weight) / \
+        dgamma = (thrust * np.sin(np.radians(self.variables["aoa"])) + self.variables["lift"] - weight*cos_gama) / \
                  (self.variables["mass"] * self.variables["tas"]) * self.variables["dt"]
 
         self.variables["gamma_rad"] += dgamma
@@ -130,19 +119,14 @@ class AirbornePhase(TakeOffPrep):
         """
         Update the aircraft's velocities, change in altitude, and change in horizontal position.
         """
-        # self.variables["v_z"] = (self.variables["thrust"] - self.variables["drag"]) / weight * self.variables["v"] - \
-        #                        (self.variables["v"]/9.81 * self.variables["accel"])
+
         self.variables["v_z"] = self.variables["tas"] * np.sin(self.variables["gamma_rad"])
 
-        # if self.reached_v2:
-        #     self.variables["dv"] = 0
-        # else:
         self.variables["dv"] = self.variables["accel"] * self.variables["dt"]
 
         self.variables["dx"] = self.variables["tas"] * np.cos(self.variables["gamma_rad"]) * self.variables["dt"]
-        # dh * np.tan(gamma_rad)
 
-        dh = self.variables["tas"] * np.sin(self.variables["gamma_rad"]) * self.variables["dt"]  # a_z*dt**2 + v_z * dt
+        dh = self.variables["tas"] * np.sin(self.variables["gamma_rad"]) * self.variables["dt"]
 
         # update
         self.variables["height"] += uc.m2ft(dh)
@@ -161,24 +145,18 @@ class AirbornePhase(TakeOffPrep):
             None.
         """
 
-        # super().transition_phase()
-        # TODO: Study the climb part p299 the Vz is low
         self.reached_v2 = False
-
+        self.variables["need_to_increase_Vr"] = True
         self.rho0 = Atmosphere(uc.ft2m(self.zp)).density
 
         # Define the target acceleration
         self.target_acceleration = 0.0  # [m/s^2]
 
-        # Define the PID controller for acceleration
-        # self.pid_acceleration = simple_pid.PID(1, 0.1, 1e-4, setpoint=self.target_acceleration)
-
         while self.variables["height"] < 35.:
 
             # CAS accelerating climb
-            # if not self.reached_v2:
-                # control alpha in order to get 0 accel
-            self.pid_control()
+            # control alpha in order to get 0 accel
+            self.k_control()
 
             # get the new angles
             self.calculate_angles()
@@ -195,19 +173,17 @@ class AirbornePhase(TakeOffPrep):
                 }
             )
 
-            # CAS steady climb
-            # else:
-            #     self.normal_climb()
-
             if self.variables["cas_kt"] >= self.speeds["v_target"]:
                 if not self.reached_v2:
                     print(f'V2min reached @ {round(float(self.variables["height"]), 2)}ft!')
                     self.characteristic_instants["v2"] = {"Instant": self.variables["t"],
                                                           "Speed": self.variables["cas_kt"]}
                     self.reached_v2 = True
+                    self.variables["need_to_increase_Vr"] = False
 
             self.update_aerial_values()
             super().update_values()
 
         self.characteristic_instants["v35ft"] = {"Instant": self.variables["t"],
                                                  "Speed": self.variables["cas_kt"]}
+        self.check_if_v2_reached()

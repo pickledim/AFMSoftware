@@ -61,8 +61,6 @@ class RotationPhase(TakeOffPrep):
             None
         """
 
-        self.variables["need_to_increase_Vr"] = False
-
         # redefine the variables from the class for ease of reading
         aoa0 = self.variables["aoa"]
         dt = self.variables["dt"]
@@ -75,7 +73,7 @@ class RotationPhase(TakeOffPrep):
 
             if aoa > alpha_max:
                 self.variables["need_to_increase_Vr"] = True
-                print("\nIncrease VR the a/c cannot Lift Off :(\n")
+                self.check_if_v2_reached()
                 return
 
             forces, accel = self.calculate_forces_in_rotation(aoa)
