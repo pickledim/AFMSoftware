@@ -388,7 +388,7 @@ class TakeOffPrep(object):
         """
 
         if self.variables["need_to_increase_Vr"]:
-            print("Increase VR the a/c cannot reach target :(\n")
+            print("Increase VR the a/c cannot reach the target :(\n")
 
     def pilot_preparation(self) -> None:
         """
