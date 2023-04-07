@@ -54,7 +54,7 @@ def find_alpha(_thrust, _alpha_vect, _v, _gamma):
 
 
 # get config data
-with open('config.json', 'r') as f:
+with open('data/config.json', 'r') as f:
     config_data = json.load(f)
 
 
