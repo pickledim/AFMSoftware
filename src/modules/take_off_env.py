@@ -11,7 +11,7 @@ from scipy.interpolate import interp1d
 
 from ambiance import Atmosphere
 
-import unit_conversion as uc
+from src.tools import unit_conversion as uc
 
 
 # from ground_phase import GroundRoll
