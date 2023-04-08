@@ -139,7 +139,7 @@ class TakeOffPrep(object):
             "q": self.config_data['q'],  # rotation rate
             "teta_target": self.config_data['teta_target']  # theta target after lift off (theta law)
         }
-
+        self.reached_airborne_phase = False
         self.vmca = self.config_data["vmca"]  # [kt]
 
         # define extra variables that will be used later on
@@ -168,10 +168,10 @@ class TakeOffPrep(object):
         v_stall = math.sqrt((2 * weight / (rho * s * clmax)))  # [m/s]
         self.v_sta = uc.ms2kt(v_stall)  # [kt]
 
-    def get_vmu(self) -> None:
+    def v2_mu_limit(self) -> None:
 
         kVs = self.vmu_interp_model(self.thrust_ssg / self.weight)
-        self.vmu = kVs * self.v_sta  # [kt]
+        self.v2_mu_limit = kVs * self.v_sta  # [kt]
 
     def define_characteristic_speeds(self) -> None:
         """
@@ -184,16 +184,15 @@ class TakeOffPrep(object):
         Returns:
             None
         """
-
-        v2min = max(1.13 * self.v_sta, 1.1 * self.vmca, self.vmu)  # [kt]
-        vr = max(1.05 * self.v_sta, 1.05 * self.vmca)  # [kt] # [kt]
+        self.v2_mu_limit()
+        v2min = max(1.13 * self.v_sta, 1.1 * self.vmca, self.v2_mu_limit)  # [kt], self.vmu
+        vr = max(1.05 * self.v_sta, 1.05 * self.vmca)
         vef = vr - 2  # [kt]
 
         self.speeds = {
             "v2min": v2min,
             "vr": vr,
             "vef": vef,
-            "vmu": self.vmu,
             "vmca": self.vmca,
             "v_stall": self.v_sta
         }
@@ -389,6 +388,8 @@ class TakeOffPrep(object):
         """
 
         if self.variables["need_to_increase_Vr"]:
+            if self.reached_airborne_phase:
+                print("Could not reach V2")
             print("Increase VR the a/c cannot reach the target :(\n")
 
     def pilot_preparation(self) -> None:
@@ -402,7 +403,6 @@ class TakeOffPrep(object):
         """
 
         self.calculate_stall_speed()
-        self.get_vmu()
         self.define_characteristic_speeds()
         self.calculate_v2_jar()
         self.initialize_data()

@@ -66,12 +66,14 @@ class RotationPhase(TakeOffPrep):
         weight = self.constants_dict["weight"]
         q = self.constants_dict["q"]
         alpha_max = self.constants_dict["aoa_max"]
+        self.variables["need_to_increase_Vr"] = False
 
         while int(self.variables["lift"]) < int(weight):
             aoa = q * dt + aoa0
 
             if aoa > alpha_max:
                 self.variables["need_to_increase_Vr"] = True
+                print("The a/c cannot LiftOff")
                 self.check_if_v2_reached()
                 return
 
@@ -98,3 +100,6 @@ class RotationPhase(TakeOffPrep):
 
         self.characteristic_instants["LiftOff"] = {"Instant": self.variables["t"],
                                                    "Speed": round(float(self.variables["cas_kt"]), 2)}
+
+
+

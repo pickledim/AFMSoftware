@@ -146,6 +146,7 @@ class AirbornePhase(TakeOffPrep):
         """
 
         self.reached_v2 = False
+        self.reached_airborne_phase = True
         self.variables["need_to_increase_Vr"] = True
         self.rho0 = Atmosphere(uc.ft2m(self.zp)).density
 
@@ -186,7 +187,7 @@ class AirbornePhase(TakeOffPrep):
 
         self.characteristic_instants["v35ft"] = {"Instant": self.variables["t"],
                                                  "Speed": round(float(self.variables["cas_kt"]), 2)}
-        print(self.characteristic_instants)
+        # print(self.characteristic_instants)
         # quick patch
         if not self.variables["need_to_increase_Vr"]:
             self.variables["cas_kt"] = self.speeds["v_target"]
