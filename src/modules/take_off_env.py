@@ -53,12 +53,7 @@ class TakeOffPrep(object):
 
     def __init__(
             self,
-            mass: float,
-            conf: str,
-            zp: float,
-            lg: str,
-            eng_state: str,
-            timestep: float
+            input_variables: dict
     ):
         """
         Constructs necessary attributes for TakeOffPrep object.
@@ -79,13 +74,14 @@ class TakeOffPrep(object):
             the time step
 
         """
+
         # performance data
-        self.mass = mass
-        self.conf = conf
-        self.zp = zp
-        self.lg = lg
-        self.eng_state = eng_state
-        self.dt = timestep
+        self.mass = input_variables["mass"]
+        self.conf = input_variables["conf"]
+        self.zp = input_variables["zp"]
+        self.lg = input_variables["lg"]
+        self.eng_state = input_variables["engine_state"]
+        self.dt = input_variables["timestep"]
 
         # get config data
         self.data_dir = os.path.join(str(Path(__file__)).split("src")[0], "data")
@@ -133,12 +129,12 @@ class TakeOffPrep(object):
             # aero data
             "aoa0": self.config_data['alpha_min'],  # initial angle of attack
             "aoa_max": alpha_max,  # max angle of attack
-            "clmax": 2.35,  # approx
+            "clmax": self.config_data['cl_max'],  # approx
             "cl_max_op": df_lift["CZ"].max(),  # max cl
             "cl0": cl0,  # max cl
             "cd_max_op": cd_max,  # max cl
             "cd0": cd0,  # max cl
-            "engine_coefs": self.config_data['engine_coefs'],  # max cl
+            "engine_coefs": self.config_data['engine_coefs'],
             # operational data
             "q": self.config_data['q'],  # rotation rate
             "teta_target": self.config_data['teta_target']  # theta target after lift off (theta law)

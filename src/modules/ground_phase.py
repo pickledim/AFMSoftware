@@ -123,4 +123,4 @@ class GroundRoll(TakeOffPrep):
             super().update_values()
 
         self.characteristic_instants["Rotation"] = {"Instant": self.variables["t"],
-                                                    "Speed": self.variables["cas_kt"]}
+                                                    "Speed": round(float(self.variables["cas_kt"]), 2)}

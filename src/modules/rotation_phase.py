@@ -67,7 +67,7 @@ class RotationPhase(TakeOffPrep):
         q = self.constants_dict["q"]
         alpha_max = self.constants_dict["aoa_max"]
 
-        while round(float(self.variables["lift"]), 1) < round(weight, 1):
+        while int(self.variables["lift"]) < int(weight):
             aoa = q * dt + aoa0
 
             if aoa > alpha_max:
@@ -97,4 +97,4 @@ class RotationPhase(TakeOffPrep):
             aoa0 = aoa
 
         self.characteristic_instants["LiftOff"] = {"Instant": self.variables["t"],
-                                                   "Speed": self.variables["cas_kt"]}
+                                                   "Speed": round(float(self.variables["cas_kt"]), 2)}

@@ -29,39 +29,39 @@ class AirbornePhase(TakeOffPrep):
             # saturate alpha
             self.variables["aoa"] = self.constants_dict["aoa_max"]
 
-    def normal_climb(self) -> None:
-        """
-        Calculate the aircraft's motion during a steady climb, using equations of motion for a constant climb
-        and a drag polar. Update the aircraft's state.
-        """
-
-        tas = self.variables["tas"]
-        thrust, weight = self.variables["thrust"], self.constants_dict["weight"]
-        rho, S, mass = self.rho, self.constants_dict["S"], self.variables["mass"]
-
-        # In order to reach constant climb -> W=L -> find the corresponding cl and cd
-        cl = 2 * weight / (rho * S * tas ** 2)
-        self.variables["lift"] = 0.5 * (rho * S * cl * tas ** 2)
-
-        cd = self.drag_polar(cl ** 2)
-        self.variables["drag"] = 0.5 * (rho * S * cd * tas ** 2)
-
-        self.variables["aoa"] = self.f_a_cd(cd)
-
-        # other method not optimal
-        # self.variables["gamma_rad"] = (self.variables["thrust"] * np.cos(uc.deg2rad(self.variables["aoa"])) /
-        #                                self.constants_dict["weight"]) - (cd / cl)
-
-        # aafp p299
-        t_aero = thrust * np.cos(np.deg2rad(self.variables["aoa"]))
-        self.variables["gamma_rad"] = (t_aero - self.variables["drag"]) / self.constants_dict["weight"]
-
-        # aafp p306
-        # dgamma = (thrust * np.sin(np.radians(self.variables["aoa"])) + self.variables["lift"] - weight) / \
-        #          (mass * tas) * self.variables["dt"]
-
-        # self.variables["gamma_rad"] += dgamma
-        self.variables["gamma"] = np.degrees(self.variables["gamma_rad"])
+    # def normal_climb(self) -> None:
+    #     """
+    #     Calculate the aircraft's motion during a steady climb, using equations of motion for a constant climb
+    #     and a drag polar. Update the aircraft's state.
+    #     """
+    #
+    #     tas = self.variables["tas"]
+    #     thrust, weight = self.variables["thrust"], self.constants_dict["weight"]
+    #     rho, S, mass = self.rho, self.constants_dict["S"], self.variables["mass"]
+    #
+    #     # In order to reach constant climb -> W=L -> find the corresponding cl and cd
+    #     cl = 2 * weight / (rho * S * tas ** 2)
+    #     self.variables["lift"] = 0.5 * (rho * S * cl * tas ** 2)
+    #
+    #     cd = self.drag_polar(cl ** 2)
+    #     self.variables["drag"] = 0.5 * (rho * S * cd * tas ** 2)
+    #
+    #     self.variables["aoa"] = self.f_a_cd(cd)
+    #
+    #     # other method not optimal
+    #     # self.variables["gamma_rad"] = (self.variables["thrust"] * np.cos(uc.deg2rad(self.variables["aoa"])) /
+    #     #                                self.constants_dict["weight"]) - (cd / cl)
+    #
+    #     # aafp p299
+    #     t_aero = thrust * np.cos(np.deg2rad(self.variables["aoa"]))
+    #     self.variables["gamma_rad"] = (t_aero - self.variables["drag"]) / self.constants_dict["weight"]
+    #
+    #     # aafp p306
+    #     # dgamma = (thrust * np.sin(np.radians(self.variables["aoa"])) + self.variables["lift"] - weight) / \
+    #     #          (mass * tas) * self.variables["dt"]
+    #
+    #     # self.variables["gamma_rad"] += dgamma
+    #     self.variables["gamma"] = np.degrees(self.variables["gamma_rad"])
 
     def calculate_angles(self) -> None:
         """
@@ -69,7 +69,7 @@ class AirbornePhase(TakeOffPrep):
         aircraft's motion.
         """
 
-        thrust, v = self.variables["thrust"], self.variables["cas"]
+        thrust = self.variables["thrust"]
         weight, mass = self.constants_dict['weight'], self.constants_dict['mass']
         cos_gama = np.cos(np.radians(self.variables["gamma"]))
 
@@ -177,7 +177,7 @@ class AirbornePhase(TakeOffPrep):
                 if not self.reached_v2:
                     print(f'V2min reached @ {round(float(self.variables["height"]), 2)}ft!')
                     self.characteristic_instants["v2"] = {"Instant": self.variables["t"],
-                                                          "Speed": self.variables["cas_kt"]}
+                                                          "Speed": round(float(self.variables["cas_kt"]), 2)}
                     self.reached_v2 = True
                     self.variables["need_to_increase_Vr"] = False
 
@@ -185,7 +185,8 @@ class AirbornePhase(TakeOffPrep):
             super().update_values()
 
         self.characteristic_instants["v35ft"] = {"Instant": self.variables["t"],
-                                                 "Speed": self.variables["cas_kt"]}
+                                                 "Speed": round(float(self.variables["cas_kt"]), 2)}
+        print(self.characteristic_instants)
         # quick patch
         if not self.variables["need_to_increase_Vr"]:
             self.variables["cas_kt"] = self.speeds["v_target"]
