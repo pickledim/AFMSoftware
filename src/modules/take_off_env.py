@@ -76,6 +76,7 @@ class TakeOffPrep(object):
         """
 
         # performance data
+        self.inputs = input_variables
         self.mass = input_variables["mass"]
         self.conf = input_variables["conf"]
         self.zp = input_variables["zp"]
@@ -396,7 +397,6 @@ class TakeOffPrep(object):
         """
         Prepares the pilot by calling several methods:
         - calculate_stall_speed: calculates the stall speed of the aircraft
-        - get_vmu: gets the minimum unstick speed
         - define_characteristic_speeds: defines the characteristic speeds of the aircraft
         - calculate_v2_jar: calculates V2 for the given altitude and weight
         - initialize_data: initializes the data dictionary and event log for the simulation

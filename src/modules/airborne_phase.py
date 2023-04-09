@@ -18,11 +18,10 @@ class AirbornePhase(TakeOffPrep):
         current acceleration.
         """
 
-        # Use the PID controller to adjust the throttle based on the difference between the target and
-        # current angle of attack
         stick_adjustment = self.target_acceleration - self.variables["accel"]
         k = self.variables["aoa"] - stick_adjustment
 
+        # Use the K controller to adjust the stick based on the difference between the target and aoa
         if k <= self.constants_dict["aoa_max"]:
             self.variables["aoa"] -= stick_adjustment
         else:
@@ -71,10 +70,12 @@ class AirbornePhase(TakeOffPrep):
 
         thrust = self.variables["thrust"]
         weight, mass = self.constants_dict['weight'], self.constants_dict['mass']
+
         cos_gama = np.cos(np.radians(self.variables["gamma"]))
+        sin_aoa = np.sin(np.radians(self.variables["aoa"]))
 
         # advanced ac perfo p306
-        dgamma = (thrust * np.sin(np.radians(self.variables["aoa"])) + self.variables["lift"] - weight*cos_gama) / \
+        dgamma = (thrust*sin_aoa + self.variables["lift"] - weight*cos_gama) / \
                  (self.variables["mass"] * self.variables["tas"]) * self.variables["dt"]
 
         self.variables["gamma_rad"] += dgamma
